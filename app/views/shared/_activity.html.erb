@@ -1,0 +1,17 @@
+<%# Recent audit trail for a single record. Locals: record, optional limit %>
+<% limit = local_assigns.fetch(:limit, 6) %>
+<% entries = Audit.for_record(record).recent.limit(limit) %>
+<section class="card overflow-hidden">
+  <div class="flex items-center justify-between gap-3 border-b border-ink-100 px-4 py-3">
+    <h3 class="font-display text-lg font-semibold text-ink-950"><%= local_assigns.fetch(:title, "Activity") %></h3>
+    <%= link_to "Full log",
+                audits_path(type: record.class.polymorphic_name, record_id: record.id),
+                class: "text-xs font-semibold text-accent-700 hover:text-accent-900" %>
+  </div>
+  <ul class="divide-y divide-ink-100">
+    <%= render partial: "audits/audit", collection: entries %>
+    <% if entries.empty? %>
+      <li class="px-4 py-6 text-center text-sm text-ink-400">No recorded changes yet.</li>
+    <% end %>
+  </ul>
+</section>

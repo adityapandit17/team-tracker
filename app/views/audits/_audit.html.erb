@@ -1,0 +1,40 @@
+<% entries = audit.entries %>
+<li class="px-4 py-3.5">
+  <div class="flex flex-wrap items-center gap-2">
+    <%= status_badge(audit.action) %>
+    <span class="text-sm font-medium text-ink-950"><%= audit.record_name %></span>
+    <span class="chip"><%= audit.type_label %></span>
+    <span class="ml-auto text-xs text-ink-400" title="<%= l(audit.created_at, format: :long) %>">
+      <%= time_ago_in_words(audit.created_at) %> ago
+    </span>
+  </div>
+
+  <p class="mt-1 text-xs text-ink-500">
+    <%= audit.actor %>
+    <% if audit.ip_address.present? && can?(:manage_users) %>
+      · <%= audit.ip_address %>
+    <% end %>
+  </p>
+
+  <% if entries.any? %>
+    <ul class="mt-2 space-y-1">
+      <% entries.first(8).each do |entry| %>
+        <li class="text-xs text-ink-600">
+          <span class="font-semibold text-ink-700"><%= entry.label %>:</span>
+          <% if audit.action == "create" %>
+            <span class="text-ink-800"><%= entry.to.presence || "—" %></span>
+          <% elsif audit.action == "destroy" %>
+            <span class="text-ink-500 line-through"><%= entry.from.presence || "—" %></span>
+          <% else %>
+            <span class="text-ink-500 line-through"><%= entry.from.presence || "—" %></span>
+            <span class="text-ink-400">→</span>
+            <span class="font-medium text-ink-900"><%= entry.to.presence || "—" %></span>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+    <% if entries.size > 8 %>
+      <p class="mt-1 text-[11px] text-ink-400">+ <%= entries.size - 8 %> more field<%= "s" if entries.size - 8 > 1 %></p>
+    <% end %>
+  <% end %>
+</li>

@@ -1,0 +1,10 @@
+<% if resource.errors.any? %>
+  <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" id="error_explanation" data-turbo-visit-control="reload">
+    <h2 class="font-semibold"><%= pluralize(resource.errors.count, "error") %> prohibited this <%= resource.class.model_name.human.downcase %> from being saved:</h2>
+    <ul class="mt-2 list-disc pl-4">
+      <% resource.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>

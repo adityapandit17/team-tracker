@@ -1,0 +1,62 @@
+<%= form_with model: one_on_one, url: (one_on_one.persisted? ? one_on_one_path(one_on_one) : (@developer ? developer_one_on_ones_path(@developer) : one_on_ones_path)), class: "space-y-5" do |f| %>
+  <% if one_on_one.errors.any? %>
+    <div class="rounded-md bg-red-50 p-3 text-sm text-red-700">
+      <ul class="list-disc pl-4"><% one_on_one.errors.full_messages.each do |msg| %><li><%= msg %></li><% end %></ul>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <% if @developer %>
+      <%= f.hidden_field :developer_id, value: @developer.id %>
+      <div class="sm:col-span-2"><p class="label">Developer</p><p class="text-sm font-medium"><%= @developer.name %></p></div>
+    <% else %>
+      <div>
+        <%= f.label :developer_id, "Developer", class: "label" %>
+        <%= f.collection_select :developer_id, scoped_developers.order(:name), :id, :name, { include_blank: "Select…" }, class: "input", required: true %>
+      </div>
+    <% end %>
+    <div>
+      <%= f.label :meeting_on, "Meeting date", class: "label" %>
+      <%= f.date_field :meeting_on, class: "input" %>
+    </div>
+    <div>
+      <%= f.label :next_review_on, "Next review", class: "label" %>
+      <%= f.date_field :next_review_on, class: "input" %>
+    </div>
+    <div>
+      <%= f.label :status, class: "label" %>
+      <%= f.select :status, OneOnOne.statuses.keys.map { |s| [s.humanize, s] }, {}, class: "input" %>
+    </div>
+    <div>
+      <%= f.label :growth_plan_id, "Growth plan", class: "label" %>
+      <%= f.collection_select :growth_plan_id,
+            (@developer || one_on_one.developer) ? (@developer || one_on_one.developer).growth_plans.ordered : GrowthPlan.none,
+            :id, :title, { include_blank: "—" }, class: "input" %>
+    </div>
+    <div>
+      <%= f.label :assessment_id, "Linked assessment", class: "label" %>
+      <%= f.collection_select :assessment_id,
+            (@developer || one_on_one.developer) ? (@developer || one_on_one.developer).assessments.order(assessed_on: :desc) : Assessment.none,
+            :id, :title, { include_blank: "—" }, class: "input" %>
+    </div>
+  </div>
+
+  <div>
+    <%= f.label :goals, "Goals discussed", class: "label" %>
+    <%= f.text_area :goals, rows: 3, class: "input", placeholder: "What should improve before the next review?" %>
+  </div>
+  <div>
+    <%= f.label :notes, class: "label" %>
+    <%= f.text_area :notes, rows: 4, class: "input" %>
+  </div>
+  <div>
+    <label class="label">Create action items (one per line)</label>
+    <%= text_area_tag :action_item_lines, params[:action_item_lines], rows: 3, class: "input", placeholder: "Prep system design notes\nShadow senior on PR reviews" %>
+    <p class="mt-1 text-xs text-ink-400">Each line becomes a linked todo for this developer.</p>
+  </div>
+
+  <div class="flex justify-end gap-2">
+    <%= link_to "Cancel", (@developer ? developer_path(@developer) : one_on_ones_path), class: "btn-secondary" %>
+    <%= f.submit class: "btn-primary" %>
+  </div>
+<% end %>

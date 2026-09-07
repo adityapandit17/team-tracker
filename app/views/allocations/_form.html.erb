@@ -1,0 +1,54 @@
+<%= form_with model: allocation, url: (allocation.persisted? ? allocation_path(allocation) : (@developer ? developer_allocations_path(@developer) : (@project ? project_allocations_path(@project) : allocations_path))), class: "space-y-5" do |f| %>
+  <% if allocation.errors.any? %>
+    <div class="rounded-md bg-red-50 p-3 text-sm text-red-700">
+      <ul class="list-disc pl-4"><% allocation.errors.full_messages.each do |msg| %><li><%= msg %></li><% end %></ul>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <% if @developer %>
+      <%= f.hidden_field :developer_id, value: @developer.id %>
+      <div><p class="label">Developer</p><p class="text-sm font-medium"><%= @developer.name %></p></div>
+    <% else %>
+      <div>
+        <%= f.label :developer_id, class: "label" %>
+        <%= f.collection_select :developer_id, scoped_developers.order(:name), :id, :name, { include_blank: "Select…" }, class: "input", required: true %>
+      </div>
+    <% end %>
+
+    <% if @project %>
+      <%= f.hidden_field :project_id, value: @project.id %>
+      <div><p class="label">Project</p><p class="text-sm font-medium"><%= @project.name %></p></div>
+    <% else %>
+      <div>
+        <%= f.label :project_id, class: "label" %>
+        <%= f.collection_select :project_id, scoped_projects.order(:name), :id, :name, { include_blank: "Select…" }, class: "input", required: true %>
+      </div>
+    <% end %>
+
+    <div>
+      <%= f.label :role, class: "label" %>
+      <%= f.select :role, Allocation.roles.keys.map { |r| [r.humanize, r] }, {}, class: "input" %>
+    </div>
+    <div>
+      <%= f.label :allocation_pct, "Allocation %", class: "label" %>
+      <%= f.number_field :allocation_pct, min: 1, max: 100, class: "input" %>
+    </div>
+    <div>
+      <%= f.label :start_on, class: "label" %>
+      <%= f.date_field :start_on, class: "input" %>
+    </div>
+    <div>
+      <%= f.label :end_on, "End (optional)", class: "label" %>
+      <%= f.date_field :end_on, class: "input" %>
+    </div>
+  </div>
+  <div>
+    <%= f.label :notes, class: "label" %>
+    <%= f.text_area :notes, rows: 2, class: "input" %>
+  </div>
+  <div class="flex justify-end gap-2">
+    <%= link_to "Cancel", bench_path, class: "btn-secondary" %>
+    <%= f.submit class: "btn-primary" %>
+  </div>
+<% end %>

@@ -1,0 +1,89 @@
+<% content_for :page_title, "#{@project.name} · Billings" %>
+<% content_for :page_description, "#{@project.billing_type.humanize} · started #{@project.start_date&.strftime('%b %d, %Y') || '—'}" %>
+
+<div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div class="flex flex-wrap items-center gap-3">
+    <%= link_to "← Project", @project, class: "text-sm font-medium text-ink-500 hover:text-ink-800" %>
+    <%= link_to "Billing overview", billings_path, class: "text-sm font-medium text-ink-500 hover:text-ink-800" %>
+  </div>
+  <div class="flex gap-2">
+    <% if can?(:manage_billings) %>
+      <%= link_to "+ Add month", new_project_project_billing_path(@project), class: "btn-primary" %>
+    <% end %>
+  </div>
+</div>
+
+<div class="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Total hours</p>
+    <p class="stat-value text-2xl"><%= hours_label(@summary[:total_hours]) %></p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Pending hours</p>
+    <p class="stat-value text-2xl"><%= hours_label(@summary[:pending_hours]) %></p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Pending amount</p>
+    <p class="stat-value text-2xl"><%= money(@summary[:pending_amount]) %></p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Cleared amount</p>
+    <p class="stat-value text-2xl"><%= money(@summary[:cleared_amount]) %></p>
+  </div>
+</div>
+
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[760px]">
+      <thead class="bg-ink-50/80">
+        <tr>
+          <th class="table-head">Month</th>
+          <th class="table-head">Hours billed</th>
+          <th class="table-head">Amount</th>
+          <th class="table-head">Status</th>
+          <th class="table-head">Notes</th>
+          <th class="table-head"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-ink-100 bg-white/50">
+        <% @billings.each do |billing| %>
+          <tr class="transition hover:bg-accent-50/40">
+            <td class="table-cell font-medium text-ink-950"><%= billing.month_label %></td>
+            <td class="table-cell"><%= hours_label(billing.hours_billed) %></td>
+            <td class="table-cell"><%= money(billing.amount) %></td>
+            <td class="table-cell"><%= status_badge(billing.status) %></td>
+            <td class="table-cell max-w-xs truncate text-ink-500"><%= billing.notes.presence || "—" %></td>
+            <td class="table-cell text-right">
+              <div class="flex flex-wrap items-center justify-end gap-2">
+                <% if can?(:manage_billings) || (can?(:edit_own_projects) && owns_record?(@project)) %>
+                  <%= link_to "Edit", edit_project_project_billing_path(@project, billing), class: "text-xs font-semibold text-accent-700 hover:text-accent-900" %>
+                  <% if billing.draft? %>
+                    <%= button_to "Submit", submit_project_project_billing_path(@project, billing), method: :post, class: "text-xs font-semibold text-sky-700 hover:text-sky-900" %>
+                  <% end %>
+                  <% if billing.open? %>
+                    <%= button_to "Mark cleared", clear_project_project_billing_path(@project, billing), method: :post, class: "text-xs font-semibold text-accent-700 hover:text-accent-900" %>
+                  <% else %>
+                    <%= button_to "Reopen", reopen_project_project_billing_path(@project, billing), method: :post, class: "text-xs font-semibold text-amber-700 hover:text-amber-900" %>
+                  <% end %>
+                <% end %>
+                <% if can?(:manage_billings) %>
+                  <%= button_to "Delete", project_project_billing_path(@project, billing), method: :delete, class: "text-xs font-semibold text-red-600 hover:text-red-800", form: { data: { turbo_confirm: "Delete #{billing.month_label}?" } } %>
+                <% end %>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+        <% if @billings.empty? %>
+          <tr>
+            <td colspan="6" class="table-cell py-10 text-center text-ink-400">
+              No billing months yet.
+              <% if can?(:manage_billings) && @project.start_date.present? %>
+                Set a start date and reopen this page to auto-generate months, or <%= link_to "add one", new_project_project_billing_path(@project), class: "font-semibold text-accent-700" %>.
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

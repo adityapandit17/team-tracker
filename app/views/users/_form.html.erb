@@ -1,0 +1,43 @@
+<%= form_with model: user,
+              url: (user.persisted? ? account_path(user) : accounts_path),
+              class: "space-y-5" do |f| %>
+  <% if user.errors.any? %>
+    <div class="rounded-md bg-red-50 p-3 text-sm text-red-700">
+      <ul class="list-disc pl-4">
+        <% user.errors.full_messages.each do |msg| %><li><%= msg %></li><% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div>
+      <%= f.label :name, class: "label" %>
+      <%= f.text_field :name, class: "input" %>
+    </div>
+    <div>
+      <%= f.label :email, class: "label" %>
+      <%= f.email_field :email, class: "input", autocomplete: "email" %>
+    </div>
+    <div>
+      <%= f.label :role, class: "label" %>
+      <%= f.select :role, User.roles.keys.map { |r| [r.humanize, r] }, {}, class: "input" %>
+    </div>
+    <div>
+      <%= f.label :developer_id, "Linked developer", class: "label" %>
+      <%= f.collection_select :developer_id, @developers, :id, :name, { include_blank: "None" }, class: "input" %>
+      <p class="mt-1 text-xs text-ink-400">Required for team leads and developers.</p>
+    </div>
+    <div>
+      <%= f.label :password, user.persisted? ? "New password" : "Password", class: "label" %>
+      <%= f.password_field :password, class: "input", autocomplete: "new-password" %>
+      <% if user.persisted? %>
+        <em class="mt-1 block text-xs text-ink-400">Leave blank to keep current password</em>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="flex justify-end gap-2">
+    <%= link_to "Cancel", accounts_path, class: "btn-secondary" %>
+    <%= f.submit user.persisted? ? "Save account" : "Create account", class: "btn-primary" %>
+  </div>
+<% end %>

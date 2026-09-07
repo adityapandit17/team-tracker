@@ -1,0 +1,115 @@
+<% content_for :page_title, "Team hierarchy" %>
+<% content_for :page_description, "Who reports to whom across the workspace" %>
+
+<div class="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase text-ink-400">Leadership</p>
+    <p class="stat-value text-2xl"><%= @totals[:leadership] %></p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase text-ink-400">Team leads</p>
+    <p class="stat-value text-2xl"><%= @totals[:leads] %></p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase text-ink-400">Developers</p>
+    <p class="stat-value text-2xl"><%= @totals[:developers] %></p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase text-ink-400">Unassigned</p>
+    <p class="stat-value text-2xl <%= "text-amber-700" if @totals[:unassigned].positive? %>"><%= @totals[:unassigned] %></p>
+    <p class="text-xs text-ink-500">no team lead</p>
+  </div>
+</div>
+
+<div class="card overflow-x-auto p-6">
+  <div class="relative min-w-[640px]" data-controller="org-chart">
+    <svg class="pointer-events-none absolute inset-0 h-full w-full overflow-visible" data-org-chart-target="canvas" aria-hidden="true">
+      <defs>
+        <marker id="org-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#a3b5aa"></path>
+        </marker>
+        <marker id="org-arrow-active" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#287968"></path>
+        </marker>
+      </defs>
+      <g data-org-chart-target="edges" fill="none" stroke="#c9d5cd" stroke-width="1.5"></g>
+    </svg>
+
+    <div class="relative z-10">
+      <%# ---- Leadership band ---- %>
+      <div data-org-node="<%= OrgChart::LEADERSHIP_KEY %>"
+           class="inline-flex flex-col gap-3 rounded-2xl border border-dashed border-ink-300 bg-ink-50/60 p-4">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-500">Leadership</p>
+        <div class="flex flex-wrap gap-3">
+          <% @chart.leadership.each do |actor| %>
+            <%= render "hierarchy/actor", actor: actor, size: :lg %>
+          <% end %>
+          <% if @chart.leadership.empty? %>
+            <p class="text-sm text-ink-400">No admin or manager accounts yet.</p>
+          <% end %>
+        </div>
+      </div>
+
+      <%# ---- Leads and their reports ---- %>
+      <div class="mt-14 flex flex-wrap items-start gap-x-12 gap-y-14">
+        <% @chart.leads.each do |lead| %>
+          <% reports = @chart.reports_for(lead.user) %>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <%= render "hierarchy/actor", actor: lead, size: :lg %>
+              <% if reports.any? %>
+                <button type="button"
+                        class="btn-ghost h-8 w-8 shrink-0 p-0 text-ink-500"
+                        aria-expanded="true"
+                        title="Collapse team"
+                        data-action="org-chart#toggleBranch"
+                        data-branch="<%= lead.key %>">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 9l6 6 6-6"/>
+                  </svg>
+                </button>
+              <% end %>
+            </div>
+
+            <% if reports.any? %>
+              <div class="mt-10 ml-10 flex flex-col gap-3" data-branch-body="<%= lead.key %>">
+                <% reports.each do |actor| %>
+                  <%= render "hierarchy/actor", actor: actor %>
+                <% end %>
+              </div>
+            <% else %>
+              <p class="mt-6 ml-10 text-sm text-ink-400">No developers on this team yet.</p>
+            <% end %>
+          </div>
+        <% end %>
+
+        <% if @chart.leads.empty? %>
+          <p class="text-sm text-ink-400">
+            No team leads yet.
+            <%= link_to "Promote a developer →", developers_path, class: "font-semibold text-accent-700" %>
+          </p>
+        <% end %>
+
+        <%# ---- People without a lead ---- %>
+        <% if @chart.unassigned.any? %>
+          <div class="min-w-0">
+            <div data-org-node="unassigned" data-org-parent="<%= OrgChart::LEADERSHIP_KEY %>"
+                 class="inline-flex items-center gap-2 rounded-2xl border border-dashed border-amber-300 bg-amber-50/70 px-4 py-3">
+              <span class="badge bg-amber-100 text-amber-900 ring-1 ring-amber-200">Unassigned</span>
+              <span class="text-sm text-ink-600"><%= @chart.unassigned.size %> without a team lead</span>
+            </div>
+            <div class="mt-10 ml-10 flex flex-col gap-3">
+              <% @chart.unassigned.each do |actor| %>
+                <%= render "hierarchy/actor", actor: actor %>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="mt-3 text-xs text-ink-400">
+  Reporting lines come from each developer's team lead. Click a name to open their profile, or use the chevron to collapse a team.
+</p>

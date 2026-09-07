@@ -1,0 +1,8 @@
+<% content_for :page_title, "Edit Action Item" %>
+<% content_for :page_description, @action_item.title %>
+
+<div class="mx-auto max-w-2xl">
+  <div class="card p-6">
+    <%= render "form", action_item: @action_item %>
+  </div>
+</div>

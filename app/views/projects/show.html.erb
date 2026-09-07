@@ -1,0 +1,132 @@
+<% content_for :page_title, @project.name %>
+<% content_for :page_description, [@project.technology, @project.start_date&.strftime("%b %Y")].compact.join(" · ") %>
+
+<div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <%= link_to "← All projects", projects_path, class: "text-sm font-medium text-ink-500 hover:text-ink-800" %>
+  <div class="flex flex-wrap gap-2">
+    <% if can?(:view_billings) %>
+      <%= link_to "Billings", project_project_billings_path(@project), class: "btn-secondary" %>
+    <% end %>
+    <% if can?(:manage_all_records) || (can?(:edit_own_projects) && owns_record?(@project)) %>
+      <%= link_to "Edit", edit_project_path(@project), class: "btn-secondary" %>
+    <% end %>
+    <% if can?(:manage_all_records) %>
+      <%= button_to "Delete", project_path(@project), method: :delete, class: "btn-danger", form: { data: { turbo_confirm: "Remove #{@project.name}?" } } %>
+    <% end %>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+  <div class="card p-6 lg:col-span-1">
+    <div class="flex items-center justify-between gap-3">
+      <h2 class="font-display text-xl font-semibold text-ink-950"><%= @project.name %></h2>
+      <%= status_badge(@project.status) %>
+    </div>
+    <dl class="mt-5 space-y-3 text-sm">
+      <div class="flex justify-between gap-3"><dt class="text-ink-500">Technology</dt><dd class="font-medium"><%= @project.technology || "—" %></dd></div>
+      <div class="flex justify-between gap-3"><dt class="text-ink-500">Start date</dt><dd class="font-medium"><%= @project.start_date&.strftime("%b %d, %Y") || "—" %></dd></div>
+      <div class="flex justify-between gap-3"><dt class="text-ink-500">Billing</dt><dd><%= status_badge(@project.billing_type) %></dd></div>
+      <% if @project.hourly_rate.present? %>
+        <div class="flex justify-between gap-3"><dt class="text-ink-500">Hourly rate</dt><dd class="font-medium"><%= money(@project.hourly_rate) %></dd></div>
+      <% end %>
+      <% if @project.fixed_price? %>
+        <div class="flex justify-between gap-3"><dt class="text-ink-500">Fixed amount</dt><dd class="font-medium"><%= money(@project.fixed_amount) %></dd></div>
+      <% end %>
+      <div class="flex justify-between gap-3"><dt class="text-ink-500">On calls</dt><dd><%= @project.call_developer ? link_to(@project.call_developer.name, @project.call_developer, class: "font-medium text-accent-700 hover:underline") : "—" %></dd></div>
+      <div class="flex justify-between gap-3"><dt class="text-ink-500">Main developer</dt><dd><%= @project.main_developer ? link_to(@project.main_developer.name, @project.main_developer, class: "font-medium text-accent-700 hover:underline") : "—" %></dd></div>
+      <div class="flex justify-between gap-3"><dt class="text-ink-500">Helper</dt><dd><%= @project.helper_developer ? link_to(@project.helper_developer.name, @project.helper_developer, class: "font-medium text-accent-700 hover:underline") : "—" %></dd></div>
+      <div class="flex justify-between gap-3"><dt class="text-ink-500">Project lead</dt><dd><%= @project.lead_developer ? link_to(@project.lead_developer.name, @project.lead_developer, class: "font-medium text-accent-700 hover:underline") : "—" %></dd></div>
+      <% if can?(:view_incentives) %>
+        <div class="flex justify-between gap-3"><dt class="text-ink-500">Incentive eligible</dt><dd class="font-medium"><%= @project.incentive_eligible? ? "Yes" : "No" %></dd></div>
+      <% end %>
+    </dl>
+
+    <div class="mt-6 border-t border-ink-100 pt-5">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-ink-900">Allocations</h3>
+        <% if can?(:manage_allocations) %>
+          <%= link_to "+ Add", new_project_allocation_path(@project), class: "text-xs font-semibold text-accent-700" %>
+        <% end %>
+      </div>
+      <% if @allocations.any? %>
+        <ul class="mt-3 space-y-2">
+          <% @allocations.each do |a| %>
+            <li class="flex justify-between text-sm">
+              <%= link_to a.developer.name, a.developer, class: "font-medium hover:text-accent-700" %>
+              <span><%= a.allocation_pct %>% · <%= a.role.humanize %></span>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="mt-2 text-xs text-ink-400">No active allocations.</p>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="lg:col-span-3">
+    <%= render "projects/timeline", timeline: @timeline %>
+  </div>
+
+  <% if can?(:view_audits) %>
+    <div class="lg:col-span-3">
+      <%= render "shared/activity", record: @project, title: "Change history" %>
+    </div>
+  <% end %>
+
+  <% if can?(:view_billings) %>
+    <div class="card p-6 lg:col-span-2">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.14em] text-ink-400">Billing snapshot</p>
+          <h3 class="font-display text-lg font-semibold text-ink-950">Hours & clearance</h3>
+        </div>
+        <%= link_to "Full history →", project_project_billings_path(@project), class: "text-xs font-semibold text-accent-700 hover:text-accent-900" %>
+      </div>
+
+      <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div class="rounded-xl border border-ink-100 bg-white/70 p-3">
+          <p class="text-[11px] font-semibold uppercase text-ink-400">Hours</p>
+          <p class="mt-1 font-display text-xl font-semibold"><%= hours_label(@summary[:total_hours]) %></p>
+        </div>
+        <div class="rounded-xl border border-ink-100 bg-white/70 p-3">
+          <p class="text-[11px] font-semibold uppercase text-ink-400">Pending</p>
+          <p class="mt-1 font-display text-xl font-semibold"><%= @summary[:pending_count] %></p>
+        </div>
+        <div class="rounded-xl border border-ink-100 bg-white/70 p-3">
+          <p class="text-[11px] font-semibold uppercase text-ink-400">Pending ₹</p>
+          <p class="mt-1 font-display text-xl font-semibold"><%= money(@summary[:pending_amount]) %></p>
+        </div>
+        <div class="rounded-xl border border-ink-100 bg-white/70 p-3">
+          <p class="text-[11px] font-semibold uppercase text-ink-400">Cleared ₹</p>
+          <p class="mt-1 font-display text-xl font-semibold"><%= money(@summary[:cleared_amount]) %></p>
+        </div>
+      </div>
+
+      <div class="mt-6 overflow-hidden rounded-xl border border-ink-100">
+        <table class="w-full text-sm">
+          <thead class="bg-ink-50/80">
+            <tr>
+              <th class="table-head">Month</th>
+              <th class="table-head">Hours</th>
+              <th class="table-head">Amount</th>
+              <th class="table-head">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-ink-100">
+            <% @recent_billings.each do |b| %>
+              <tr>
+                <td class="table-cell font-medium"><%= b.month_label %></td>
+                <td class="table-cell"><%= hours_label(b.hours_billed) %></td>
+                <td class="table-cell"><%= money(b.amount) %></td>
+                <td class="table-cell"><%= status_badge(b.status) %></td>
+              </tr>
+            <% end %>
+            <% if @recent_billings.empty? %>
+              <tr><td colspan="4" class="table-cell text-ink-400">No billing entries yet.</td></tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  <% end %>
+</div>

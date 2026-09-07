@@ -1,0 +1,83 @@
+<%# Developer stints on a project, rebuilt from its audit history. Locals: timeline %>
+<section class="card p-6">
+  <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-[0.14em] text-ink-400">Project history</p>
+      <h3 class="font-display text-xl font-semibold text-ink-950">Developer timeline</h3>
+    </div>
+    <p class="text-xs text-ink-500">
+      <%= l(timeline.starts_at.to_date) %> → <%= timeline.ends_at > Time.current - 1.minute ? "now" : l(timeline.ends_at.to_date) %>
+      · <%= duration_label(timeline.span_seconds) %>
+    </p>
+  </div>
+
+  <% if timeline.any_stints? %>
+    <%# ---- Axis ---- %>
+    <div class="mt-5 flex items-center gap-3">
+      <div class="w-16 shrink-0"></div>
+      <div class="relative h-4 flex-1">
+        <% timeline.ticks.each do |tick| %>
+          <span class="absolute -translate-x-1/2 text-[10px] font-medium text-ink-400" style="left: <%= tick.position_pct %>%">
+            <%= tick.label %>
+          </span>
+        <% end %>
+      </div>
+    </div>
+
+    <%# ---- Lanes ---- %>
+    <div class="mt-1 space-y-2">
+      <% timeline.lanes.each do |lane| %>
+        <div class="flex items-center gap-3">
+          <span class="w-16 shrink-0 text-[11px] font-semibold uppercase tracking-wide text-ink-500"><%= lane.label %></span>
+          <div class="relative h-9 flex-1 overflow-hidden rounded-lg border border-ink-100 bg-ink-50/70">
+            <% timeline.ticks.each do |tick| %>
+              <span class="absolute inset-y-0 w-px bg-ink-200/70" style="left: <%= tick.position_pct %>%"></span>
+            <% end %>
+
+            <% lane.stints.each do |stint| %>
+              <div class="absolute inset-y-1 flex items-center gap-1.5 overflow-hidden rounded-md px-2 text-white shadow-sm <%= avatar_color(stint.name) %> <%= "border-l-2 border-dashed border-white/70" if stint.inferred_start %>"
+                   style="left: <%= stint.offset_pct %>%; width: <%= stint.width_pct %>%; min-width: 10px;"
+                   title="<%= stint.name %> · <%= lane.label %> · <%= l(stint.started_at.to_date) %><%= stint.inferred_start ? " (from project start)" : "" %> → <%= stint.ongoing ? "now" : l(stint.ended_at.to_date) %> · <%= duration_label(stint.seconds) %>">
+                <span class="truncate text-[11px] font-semibold"><%= short_name(stint.name) %></span>
+                <span class="shrink-0 text-[10px] text-white/80"><%= duration_label(stint.seconds) %></span>
+                <% if stint.ongoing %>
+                  <span class="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-white/90"></span>
+                <% end %>
+              </div>
+            <% end %>
+
+            <% if lane.stints.empty? %>
+              <span class="absolute inset-0 flex items-center justify-center text-[11px] text-ink-300">Never assigned</span>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <%# ---- Time per developer ---- %>
+    <div class="mt-6 border-t border-ink-100 pt-5">
+      <h4 class="text-sm font-semibold text-ink-900">Time spent</h4>
+      <ul class="mt-3 space-y-2.5">
+        <% timeline.totals.each do |total| %>
+          <li>
+            <div class="mb-1 flex items-center gap-2 text-xs">
+              <%= initials_avatar(total.name, size: "h-6 w-6") %>
+              <span class="font-medium text-ink-800"><%= total.name %></span>
+              <span class="text-ink-400"><%= total.roles.join(" · ") %></span>
+              <span class="ml-auto font-semibold text-ink-900"><%= duration_label(total.seconds) %></span>
+            </div>
+            <div class="h-2 overflow-hidden rounded-full bg-ink-100">
+              <div class="h-full rounded-full <%= avatar_color(total.name) %>" style="width: <%= total.share_pct %>%"></div>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+
+    <p class="mt-4 text-[11px] text-ink-400">
+      Dashed edges mark stints that began before change tracking started, so they are counted from the project start date.
+    </p>
+  <% else %>
+    <p class="mt-4 text-sm text-ink-400">No developers have been assigned to this project yet.</p>
+  <% end %>
+</section>

@@ -1,0 +1,6 @@
+<% content_for :page_title, "Edit billing" %>
+<% content_for :page_description, "#{@project.name} · #{@billing.month_label}" %>
+
+<div class="max-w-xl card p-6">
+  <%= render "form", project: @project, billing: @billing %>
+</div>

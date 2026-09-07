@@ -1,0 +1,459 @@
+<% content_for :page_title, @developer.name %>
+<% content_for :page_description, "Report card · #{@developer.stack.upcase}" %>
+
+<div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <%= link_to "← All developers", developers_path, class: "text-sm font-medium text-ink-500 hover:text-ink-800" %>
+  <div class="flex flex-wrap gap-2">
+    <% if can?(:manage_all_records) || (current_user.team_lead? && accessible_developer?(@developer)) || (current_user.developer? && owns_record?(@developer)) %>
+      <%= link_to "Edit", edit_developer_path(@developer), class: "btn-secondary" %>
+    <% end %>
+    <% if can?(:manage_all_records) %>
+      <%= button_to "Delete", developer_path(@developer), method: :delete, class: "btn-danger", form: { data: { turbo_confirm: "Remove #{@developer.name}?" } } %>
+    <% end %>
+  </div>
+</div>
+
+<%# ---- Profile + promote ---- %>
+<div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+  <div class="card p-6 lg:col-span-1">
+    <div class="flex items-center gap-3">
+      <%= initials_avatar(@developer.name, size: "h-12 w-12") %>
+      <div>
+        <h2 class="font-display text-lg font-semibold text-ink-950"><%= @developer.name %></h2>
+        <p class="text-xs text-ink-500"><%= @developer.education_detail || "No education on file" %><%= " · #{@developer.passing_year}" if @developer.passing_year %></p>
+        <% if @developer.team_lead_account? %>
+          <span class="mt-1 inline-flex badge bg-accent-100 text-accent-800 ring-1 ring-accent-200">Team lead account</span>
+        <% elsif @developer.user&.developer? %>
+          <span class="mt-1 inline-flex badge bg-ink-100 text-ink-700 ring-1 ring-ink-200">Developer account</span>
+        <% end %>
+      </div>
+    </div>
+    <dl class="mt-6 space-y-3 text-sm">
+      <div class="flex justify-between gap-3"><dt class="text-ink-500">Stack</dt><dd><%= status_badge(@developer.stack) %></dd></div>
+      <div class="flex justify-between gap-3"><dt class="text-ink-500">Team lead</dt><dd class="font-medium"><%= @developer.team_lead&.display_name || "—" %></dd></div>
+      <div class="flex justify-between gap-3"><dt class="text-ink-500">Availability</dt><dd><%= status_badge(@developer.availability_status) %></dd></div>
+      <div class="flex justify-between gap-3"><dt class="text-ink-500">Ready</dt><dd class="font-medium"><%= @developer.ready_for_new_project? ? "Yes" : "No" %></dd></div>
+      <div class="flex justify-between gap-3"><dt class="text-ink-500">On call</dt><dd class="font-medium"><%= @developer.on_call_count %></dd></div>
+      <div class="flex justify-between gap-3"><dt class="text-ink-500">Rating</dt><dd><%= rating_stars(@developer.rating) %></dd></div>
+      <% if @developer.hourly_cost.present? && (can?(:view_utilization) || can?(:manage_all_records)) %>
+        <div class="flex justify-between gap-3"><dt class="text-ink-500">Hourly cost</dt><dd class="font-medium"><%= money(@developer.hourly_cost) %></dd></div>
+      <% end %>
+      <% if @incentive_summary && can?(:view_incentives) %>
+        <div class="flex justify-between gap-3"><dt class="text-ink-500">Led projects</dt><dd class="font-medium"><%= @incentive_summary.total_led_projects %></dd></div>
+        <div class="flex justify-between gap-3"><dt class="text-ink-500">Lead incentive</dt><dd class="font-medium"><%= money(@incentive_summary.total_amount) %></dd></div>
+      <% end %>
+      <div class="flex justify-between gap-3"><dt class="text-ink-500">Allocation</dt><dd class="font-medium"><%= @developer.current_allocation_pct %>%<% if @developer.on_bench? %> · bench<% end %></dd></div>
+      <div class="flex justify-between gap-3"><dt class="text-ink-500">B2B eligible</dt><dd class="font-medium"><%= @developer.b2b_eligible.nil? ? "—" : (@developer.b2b_eligible? ? "Yes" : "No") %></dd></div>
+    </dl>
+    <% if @developer.notes.present? %>
+      <div class="mt-5 rounded-xl bg-ink-50 p-3 text-xs leading-relaxed text-ink-600"><%= @developer.notes %></div>
+    <% end %>
+
+    <% if can?(:promote_team_leads) && !@developer.team_lead_account? %>
+      <div class="mt-6 rounded-2xl border border-accent-200 bg-accent-50/60 p-4">
+        <h3 class="text-sm font-semibold text-ink-950">Promote to team lead</h3>
+        <p class="mt-1 text-xs text-ink-500">Creates or upgrades their login so they can manage a team.</p>
+        <%= form_with url: promote_developer_path(@developer), method: :post, class: "mt-3 space-y-3" do %>
+          <div>
+            <label class="label">Name</label>
+            <%= text_field_tag :name, @developer.user&.name || @developer.name, class: "input" %>
+          </div>
+          <div>
+            <label class="label">Login email</label>
+            <%= email_field_tag :email, @developer.user&.email, class: "input", required: true, placeholder: "lead@company.com" %>
+          </div>
+          <div>
+            <label class="label"><%= @developer.user ? "New password (optional)" : "Password" %></label>
+            <%= password_field_tag :password, nil, class: "input", required: @developer.user.blank?, autocomplete: "new-password", placeholder: @developer.user ? "Leave blank to keep" : "Min 6 characters" %>
+          </div>
+          <%= submit_tag "Promote to team lead", class: "btn-primary w-full", data: { turbo_confirm: "Promote #{@developer.name} to team lead?" } %>
+        <% end %>
+      </div>
+    <% elsif can?(:promote_team_leads) && @developer.team_lead_account? %>
+      <div class="mt-6 rounded-2xl border border-ink-200 bg-ink-50 p-4 text-sm text-ink-600">
+        Already a team lead —
+        <%= link_to "manage account", edit_account_path(@developer.user), class: "font-semibold text-accent-700 hover:underline" %>.
+      </div>
+    <% end %>
+  </div>
+
+  <%# ---- Report card ---- %>
+  <div class="space-y-4 lg:col-span-2">
+    <section class="card p-6">
+      <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.14em] text-ink-400">Report card</p>
+          <h3 class="font-display text-xl font-semibold text-ink-950">Client leads efficiency</h3>
+        </div>
+        <p class="text-xs text-ink-500">Based on leads assigned to this developer</p>
+      </div>
+
+      <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div class="rounded-xl border border-ink-100 bg-white/70 p-3">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Total leads</p>
+          <p class="mt-1 font-display text-2xl font-semibold text-ink-950"><%= @report[:total] %></p>
+        </div>
+        <div class="rounded-xl border border-ink-100 bg-white/70 p-3">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Win rate</p>
+          <p class="mt-1 font-display text-2xl font-semibold text-ink-950"><%= @report[:win_rate] ? "#{@report[:win_rate]}%" : "—" %></p>
+          <p class="text-[10px] text-ink-400">won ÷ (won + lost)</p>
+        </div>
+        <div class="rounded-xl border border-ink-100 bg-white/70 p-3">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Conversion</p>
+          <p class="mt-1 font-display text-2xl font-semibold text-ink-950"><%= @report[:conversion_rate] %>%</p>
+          <p class="text-[10px] text-ink-400">won ÷ total</p>
+        </div>
+        <div class="rounded-xl border border-ink-100 bg-white/70 p-3">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Avg rounds</p>
+          <p class="mt-1 font-display text-2xl font-semibold text-ink-950"><%= @report[:avg_rounds] || "—" %></p>
+        </div>
+      </div>
+
+      <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div
+          class="relative h-64"
+          data-controller="leads-chart"
+          data-leads-chart-labels-value="<%= @report[:chart_labels].to_json %>"
+          data-leads-chart-values-value="<%= @report[:chart_values].to_json %>"
+          data-leads-chart-colors-value="<%= @report[:chart_colors].to_json %>">
+          <% if @report[:total].zero? %>
+            <div class="flex h-full items-center justify-center rounded-xl border border-dashed border-ink-200 text-sm text-ink-400">
+              No leads assigned yet
+            </div>
+          <% else %>
+            <canvas aria-label="Leads by status chart"></canvas>
+          <% end %>
+        </div>
+
+        <div>
+          <h4 class="text-sm font-semibold text-ink-900">Status breakdown</h4>
+          <ul class="mt-3 space-y-2">
+            <% @report[:by_status].each do |status, count| %>
+              <% pct = @report[:total].zero? ? 0 : ((count * 100.0) / @report[:total]).round %>
+              <li>
+                <div class="mb-1 flex items-center justify-between text-xs">
+                  <span class="font-medium text-ink-700"><%= status.humanize %></span>
+                  <span class="text-ink-500"><%= count %> · <%= pct %>%</span>
+                </div>
+                <div class="h-2 overflow-hidden rounded-full bg-ink-100">
+                  <div class="h-full rounded-full transition-all" style="width: <%= pct %>%; background-color: <%= Developer::LEAD_STATUS_COLORS[status] %>"></div>
+                </div>
+              </li>
+            <% end %>
+          </ul>
+
+          <div class="mt-5 grid grid-cols-2 gap-2 text-sm">
+            <div class="rounded-xl bg-[#c6efce]/70 px-3 py-2">
+              <p class="text-[11px] font-semibold uppercase text-ink-500">Won</p>
+              <p class="font-display text-lg font-semibold text-ink-950"><%= @report[:won] %></p>
+            </div>
+            <div class="rounded-xl bg-[#ffc7ce]/70 px-3 py-2">
+              <p class="text-[11px] font-semibold uppercase text-ink-500">Lost</p>
+              <p class="font-display text-lg font-semibold text-ink-950"><%= @report[:lost] %></p>
+            </div>
+            <div class="rounded-xl bg-[#ddebf7]/70 px-3 py-2">
+              <p class="text-[11px] font-semibold uppercase text-ink-500">Active</p>
+              <p class="font-display text-lg font-semibold text-ink-950"><%= @report[:active] %></p>
+            </div>
+            <div class="rounded-xl bg-[#ffeb9c]/70 px-3 py-2">
+              <p class="text-[11px] font-semibold uppercase text-ink-500">Hold</p>
+              <p class="font-display text-lg font-semibold text-ink-950"><%= @report[:hold] %></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <% if @incentive_summary && can?(:view_incentives) %>
+    <section class="card p-6">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <h3 class="font-display text-lg font-semibold text-ink-950">Lead projects & incentive</h3>
+          <p class="mt-1 text-xs text-ink-500">
+            <%= @incentive_summary.eligible_projects.size %> eligible ·
+            free <%= @incentive_summary.free_threshold %> ·
+            <%= @incentive_summary.incentive_project_count %> paid × <%= money(@incentive_summary.amount_per_project) %>
+          </p>
+        </div>
+        <%= link_to "Full breakdown", incentive_path(@developer), class: "text-xs font-semibold text-accent-700" %>
+      </div>
+      <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div class="rounded-xl border border-ink-100 bg-white/70 p-3">
+          <p class="text-[11px] font-semibold uppercase text-ink-400">Led</p>
+          <p class="mt-1 font-display text-xl font-semibold"><%= @incentive_summary.total_led_projects %></p>
+        </div>
+        <div class="rounded-xl border border-ink-100 bg-white/70 p-3">
+          <p class="text-[11px] font-semibold uppercase text-ink-400">Eligible</p>
+          <p class="mt-1 font-display text-xl font-semibold"><%= @incentive_summary.eligible_projects.size %></p>
+        </div>
+        <div class="rounded-xl border border-ink-100 bg-white/70 p-3">
+          <p class="text-[11px] font-semibold uppercase text-ink-400">Incentive #</p>
+          <p class="mt-1 font-display text-xl font-semibold"><%= @incentive_summary.incentive_project_count %></p>
+        </div>
+        <div class="rounded-xl border border-ink-100 bg-white/70 p-3">
+          <p class="text-[11px] font-semibold uppercase text-ink-400">Amount</p>
+          <p class="mt-1 font-display text-xl font-semibold"><%= money(@incentive_summary.total_amount) %></p>
+        </div>
+      </div>
+      <% if @incentive_summary.projects.any? %>
+        <ul class="mt-4 space-y-2">
+          <% @incentive_summary.projects.first(8).each do |row| %>
+            <li class="flex items-center justify-between rounded-xl border border-ink-100 bg-white/70 px-3 py-2.5 text-sm">
+              <%= link_to row.project.name, row.project, class: "font-medium text-ink-900 hover:text-accent-700" %>
+              <div class="flex items-center gap-2">
+                <% if row.counts_toward_incentive %>
+                  <span class="badge bg-accent-100 text-accent-800 ring-1 ring-accent-200">Incentive</span>
+                <% elsif row.within_free_threshold %>
+                  <span class="badge bg-amber-50 text-amber-800 ring-1 ring-amber-200">Free</span>
+                <% end %>
+                <%= status_badge(row.project.status) %>
+              </div>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="mt-3 text-sm text-ink-400">No active/hold projects under this lead.</p>
+      <% end %>
+    </section>
+    <% end %>
+
+    <section class="card p-6">
+      <div class="flex items-center justify-between gap-3">
+        <h3 class="font-display text-lg font-semibold text-ink-950">Assigned leads</h3>
+        <%= link_to "All leads", client_leads_path, class: "text-xs font-semibold text-accent-700 hover:text-accent-900" %>
+      </div>
+      <% if @assigned_leads.any? %>
+        <div class="mt-4 overflow-hidden rounded-xl border border-ink-100">
+          <table class="w-full text-sm">
+            <thead class="bg-ink-50/80">
+              <tr>
+                <th class="table-head">Client</th>
+                <th class="table-head">Status</th>
+                <th class="table-head">Rounds</th>
+                <th class="table-head"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-ink-100">
+              <% @assigned_leads.each do |lead| %>
+                <tr>
+                  <td class="table-cell font-medium text-ink-900"><%= lead.client_name %></td>
+                  <td class="table-cell"><%= status_badge(lead.status) %></td>
+                  <td class="table-cell"><%= lead.rounds %></td>
+                  <td class="table-cell text-right"><%= link_to "View", lead, class: "text-xs font-semibold text-accent-700" %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <p class="mt-3 text-sm text-ink-400">No client leads assigned to this developer.</p>
+      <% end %>
+    </section>
+
+    <section class="card p-6">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <h3 class="font-display text-lg font-semibold text-ink-950">Feedback</h3>
+          <% if @avg_feedback_rating %>
+            <p class="mt-1 text-xs text-ink-500">Average <%= rating_stars(@avg_feedback_rating) %></p>
+          <% end %>
+        </div>
+        <div class="flex gap-2">
+          <%= link_to "All", developer_feedbacks_path(@developer), class: "text-xs font-semibold text-accent-700" %>
+          <% if can?(:manage_feedback) %>
+            <%= link_to "+ Add", new_developer_feedback_path(@developer), class: "text-xs font-semibold text-accent-700" %>
+          <% end %>
+        </div>
+      </div>
+      <% if @recent_feedbacks.any? %>
+        <ul class="mt-4 space-y-2">
+          <% @recent_feedbacks.each do |fb| %>
+            <li class="flex items-start justify-between gap-3 rounded-xl border border-ink-100 bg-white/70 px-3 py-2.5">
+              <div class="min-w-0">
+                <%= link_to fb.title, fb, class: "text-sm font-medium text-ink-900 hover:text-accent-700" %>
+                <p class="mt-0.5 text-[11px] text-ink-400"><%= fb.author.display_name %> · <%= l(fb.feedback_date) %></p>
+              </div>
+              <%= rating_stars(fb.rating) %>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="mt-3 text-sm text-ink-400">No feedback recorded yet.</p>
+      <% end %>
+    </section>
+
+    <section class="card p-6">
+      <div class="flex items-center justify-between gap-3">
+        <h3 class="font-display text-lg font-semibold text-ink-950">Assessments</h3>
+        <div class="flex gap-2">
+          <%= link_to "All", developer_assessments_path(@developer), class: "text-xs font-semibold text-accent-700" %>
+          <% if can?(:manage_assessments) %>
+            <%= link_to "+ Add", new_developer_assessment_path(@developer), class: "text-xs font-semibold text-accent-700" %>
+          <% end %>
+        </div>
+      </div>
+      <% if @latest_assessments.any? %>
+        <ul class="mt-4 space-y-2">
+          <% @latest_assessments.each do |assessment| %>
+            <li class="flex items-center justify-between gap-3 rounded-xl border border-ink-100 bg-white/70 px-3 py-2.5">
+              <div class="min-w-0">
+                <%= link_to assessment.title, assessment, class: "text-sm font-medium text-ink-900 hover:text-accent-700" %>
+                <p class="mt-0.5 text-[11px] text-ink-400"><%= assessment.career_level.humanize %> · <%= l(assessment.assessed_on) %></p>
+              </div>
+              <div class="flex items-center gap-2">
+                <%= status_badge(assessment.career_level) %>
+                <%= rating_stars(assessment.overall_rating) %>
+              </div>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="mt-3 text-sm text-ink-400">No assessments yet.</p>
+      <% end %>
+    </section>
+
+    <section class="card p-6">
+      <div class="flex items-center justify-between gap-3">
+        <h3 class="font-display text-lg font-semibold text-ink-950">Action items</h3>
+        <div class="flex gap-2">
+          <%= link_to "All", developer_action_items_path(@developer), class: "text-xs font-semibold text-accent-700" %>
+          <% if can?(:manage_developer_action_items) %>
+            <%= link_to "+ Add", new_developer_action_item_path(@developer), class: "text-xs font-semibold text-accent-700" %>
+          <% end %>
+        </div>
+      </div>
+      <% if @open_action_items.any? %>
+        <ul class="mt-4 space-y-2">
+          <% @open_action_items.each do |item| %>
+            <li class="flex items-center justify-between gap-3 rounded-xl border border-ink-100 bg-white/70 px-3 py-2.5 text-sm">
+              <div class="min-w-0">
+                <%= link_to item.title, item, class: "font-medium text-ink-900 hover:text-accent-700" %>
+                <p class="mt-0.5 text-[11px] text-ink-400">
+                  <%= item.assignee.display_name %>
+                  <% if item.due_on %> · due <%= l(item.due_on) %><% end %>
+                </p>
+              </div>
+              <div class="flex gap-1.5">
+                <%= status_badge(item.priority) %>
+                <%= status_badge(item.status) %>
+              </div>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="mt-3 text-sm text-ink-400">No open action items.</p>
+      <% end %>
+    </section>
+
+    <section class="card p-6">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <h3 class="font-display text-lg font-semibold text-ink-950">Allocation</h3>
+          <p class="mt-1 text-xs text-ink-500">
+            <%= @developer.current_allocation_pct %>% · <%= hours_label(@developer.allocated_hours) %>/mo
+            <% if @developer.on_bench? %><span class="ml-1 badge bg-amber-50 text-amber-800 ring-1 ring-amber-200">Bench</span><% end %>
+          </p>
+        </div>
+        <div class="flex gap-2">
+          <%= link_to "All", developer_allocations_path(@developer), class: "text-xs font-semibold text-accent-700" %>
+          <% if can?(:manage_allocations) %>
+            <%= link_to "+ Add", new_developer_allocation_path(@developer), class: "text-xs font-semibold text-accent-700" %>
+          <% end %>
+        </div>
+      </div>
+      <% if @current_allocations.any? %>
+        <ul class="mt-4 space-y-2">
+          <% @current_allocations.each do |a| %>
+            <li class="flex items-center justify-between rounded-xl border border-ink-100 px-3 py-2.5 text-sm">
+              <div>
+                <%= link_to a.project.name, a.project, class: "font-medium hover:text-accent-700" %>
+                <p class="text-[11px] text-ink-400"><%= a.role.humanize %></p>
+              </div>
+              <span class="font-semibold"><%= a.allocation_pct %>%</span>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="mt-3 text-sm text-ink-400">No active allocations — on bench.</p>
+      <% end %>
+    </section>
+
+    <section class="card p-6">
+      <div class="flex items-center justify-between gap-3">
+        <h3 class="font-display text-lg font-semibold text-ink-950">Growth & 1:1s</h3>
+        <div class="flex gap-2">
+          <%= link_to "Plans", developer_growth_plans_path(@developer), class: "text-xs font-semibold text-accent-700" %>
+          <%= link_to "1:1s", developer_one_on_ones_path(@developer), class: "text-xs font-semibold text-accent-700" %>
+          <% if can?(:manage_one_on_ones) %>
+            <%= link_to "+ 1:1", new_developer_one_on_one_path(@developer), class: "text-xs font-semibold text-accent-700" %>
+          <% end %>
+        </div>
+      </div>
+      <% if @active_growth_plan %>
+        <div class="mt-4 rounded-xl border border-ink-100 bg-white/70 px-3 py-3">
+          <div class="flex items-start justify-between gap-2">
+            <%= link_to @active_growth_plan.title, @active_growth_plan, class: "text-sm font-semibold hover:text-accent-700" %>
+            <%= status_badge(@active_growth_plan.status) %>
+          </div>
+          <% if @active_growth_plan.next_review_on %>
+            <p class="mt-1 text-xs <%= @active_growth_plan.overdue? ? 'font-semibold text-red-600' : 'text-ink-400' %>">
+              Next review <%= l(@active_growth_plan.next_review_on) %>
+            </p>
+          <% end %>
+          <% if @active_growth_plan.goals.present? %>
+            <p class="mt-2 line-clamp-2 text-xs text-ink-600"><%= @active_growth_plan.goals %></p>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="mt-3 text-sm text-ink-400">
+          No active growth plan.
+          <% if can?(:manage_growth_plans) %>
+            <%= link_to "Create one →", new_developer_growth_plan_path(@developer), class: "font-semibold text-accent-700" %>
+          <% end %>
+        </p>
+      <% end %>
+      <% if @recent_one_on_ones.any? %>
+        <ul class="mt-3 space-y-2">
+          <% @recent_one_on_ones.each do |ooo| %>
+            <li class="flex items-center justify-between text-sm">
+              <%= link_to l(ooo.meeting_on), ooo, class: "font-medium hover:text-accent-700" %>
+              <%= status_badge(ooo.status) %>
+            </li>
+          <% end %>
+        </ul>
+      <% end %>
+    </section>
+
+    <section class="card p-6">
+      <h3 class="font-display text-lg font-semibold text-ink-950">Skills</h3>
+      <div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <% @skills.each do |ds| %>
+          <div class="flex items-center justify-between rounded-xl border border-ink-100 bg-white/70 px-3 py-2.5">
+            <span class="text-xs font-semibold text-ink-600"><%= ds.skill.category %></span>
+            <%= proficiency_badge(ds.proficiency) %>
+          </div>
+        <% end %>
+        <% if @skills.empty? %>
+          <p class="col-span-full text-sm text-ink-400">No skills recorded yet. <%= link_to "Add on the Skill Matrix →", skills_path, class: "font-semibold text-accent-700 hover:underline" %></p>
+        <% end %>
+      </div>
+
+      <h3 class="mt-8 font-display text-lg font-semibold text-ink-950">Projects</h3>
+      <ul class="mt-4 space-y-2">
+        <% @projects.each do |p| %>
+          <li class="flex items-center justify-between rounded-xl border border-ink-100 bg-white/70 px-3 py-2.5 text-sm">
+            <%= link_to p.name, p, class: "font-medium text-ink-900 hover:text-accent-700" %>
+            <%= status_badge(p.status) %>
+          </li>
+        <% end %>
+        <% if @projects.empty? %>
+          <li class="text-sm text-ink-400">Not currently assigned to a project.</li>
+        <% end %>
+      </ul>
+    </section>
+
+    <% if can?(:view_audits) %>
+      <%= render "shared/activity", record: @developer %>
+    <% end %>
+  </div>
+</div>

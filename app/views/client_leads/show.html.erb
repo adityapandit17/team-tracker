@@ -1,0 +1,25 @@
+<% content_for :page_title, @client_lead.client_name %>
+<div class="mb-4 flex items-center justify-between gap-3">
+  <%= link_to "← All leads", client_leads_path, class: "text-sm text-slate-500 hover:text-slate-700" %>
+  <div class="flex gap-2">
+    <% if can?(:manage_all_records) || (can?(:edit_own_leads) && owns_record?(@client_lead)) %>
+      <%= link_to "Edit", edit_client_lead_path(@client_lead), class: "btn-secondary" %>
+    <% end %>
+    <% if can?(:manage_all_records) %>
+      <%= button_to "Delete", client_lead_path(@client_lead), method: :delete, class: "btn-danger", form: { data: { turbo_confirm: "Remove this lead?" } } %>
+    <% end %>
+  </div>
+</div>
+<div class="card max-w-xl p-5">
+  <div class="flex items-center justify-between">
+    <h2 class="text-base font-semibold text-slate-900"><%= @client_lead.client_name %></h2>
+    <%= status_badge(@client_lead.status) %>
+  </div>
+  <dl class="mt-4 space-y-3 text-sm">
+    <div class="flex justify-between"><dt class="text-slate-500">Assignee</dt><dd><%= @client_lead.assignee&.name || "—" %></dd></div>
+    <div class="flex justify-between"><dt class="text-slate-500">Calls</dt><dd><%= @client_lead.calls.presence || "—" %></dd></div>
+    <div class="flex justify-between"><dt class="text-slate-500">Tests</dt><dd><%= @client_lead.tests.presence || "—" %></dd></div>
+    <div class="flex justify-between"><dt class="text-slate-500">Rounds</dt><dd><%= @client_lead.rounds %></dd></div>
+    <div class="flex justify-between"><dt class="text-slate-500">Remarks</dt><dd><%= @client_lead.remarks.presence || "—" %></dd></div>
+  </dl>
+</div>

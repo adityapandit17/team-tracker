@@ -1,0 +1,8 @@
+<% content_for :page_title, "New Assessment" %>
+<% content_for :page_description, @developer ? "For #{@developer.name}" : "Rate a developer at a career level" %>
+
+<div class="mx-auto max-w-3xl">
+  <div class="card p-6">
+    <%= render "form", assessment: @assessment %>
+  </div>
+</div>

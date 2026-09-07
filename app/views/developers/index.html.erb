@@ -1,0 +1,82 @@
+<% content_for :page_title, "Developers" %>
+<% content_for :page_description, "#{@developers.size} shown" %>
+
+<div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div class="flex flex-wrap gap-2">
+    <%= link_to "All", developers_path, class: params[:stack].blank? && params[:ready].blank? && params[:team_lead_id].blank? ? "chip-active" : "chip" %>
+    <%= link_to "ROR", developers_path(stack: "ror"), class: params[:stack] == "ror" ? "chip-active" : "chip" %>
+    <%= link_to "MERN", developers_path(stack: "mern"), class: params[:stack] == "mern" ? "chip-active" : "chip" %>
+    <%= link_to "Ready for new project", developers_path(ready: "1"), class: params[:ready] == "1" ? "chip-active" : "chip" %>
+    <% if can?(:manage_all_records) %>
+      <% team_lead_options.each do |lead| %>
+        <%= link_to lead.display_name.split.first, developers_path(team_lead_id: lead.id), class: params[:team_lead_id].to_s == lead.id.to_s ? "chip-active" : "chip" %>
+      <% end %>
+    <% end %>
+  </div>
+  <%= link_to "+ Add Developer", new_developer_path, class: "btn-primary" if can?(:manage_team_developers) %>
+</div>
+
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[720px]">
+      <thead class="bg-ink-50/80">
+        <tr>
+          <th class="table-head">Name</th>
+          <th class="table-head">Stack</th>
+          <% if can?(:manage_all_records) || current_user.team_lead? %>
+            <th class="table-head">Team lead</th>
+          <% end %>
+          <th class="table-head">Availability</th>
+          <th class="table-head">On Call</th>
+          <th class="table-head">Ready?</th>
+          <th class="table-head">Rating</th>
+          <th class="table-head">B2B</th>
+          <th class="table-head"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-ink-100 bg-white/50">
+        <% @developers.each do |dev| %>
+          <tr class="transition hover:bg-accent-50/40">
+            <td class="table-cell font-medium text-ink-950">
+              <div class="flex items-center gap-2.5">
+                <%= initials_avatar(dev.name) %>
+                <div>
+                  <%= link_to dev.name, dev, class: "hover:text-accent-700" %>
+                  <% if current_user.developer_id == dev.id %>
+                    <span class="ml-1 text-[10px] font-semibold uppercase tracking-wide text-accent-700">You</span>
+                  <% end %>
+                  <% if dev.user&.team_lead? %>
+                    <span class="ml-1 text-[10px] font-semibold uppercase tracking-wide text-ink-400">Lead</span>
+                  <% end %>
+                </div>
+              </div>
+            </td>
+            <td class="table-cell"><%= status_badge(dev.stack) %></td>
+            <% if can?(:manage_all_records) || current_user.team_lead? %>
+              <td class="table-cell text-ink-500"><%= dev.team_lead&.display_name || "—" %></td>
+            <% end %>
+            <td class="table-cell"><%= status_badge(dev.availability_status) %></td>
+            <td class="table-cell"><%= dev.on_call_count %></td>
+            <td class="table-cell">
+              <% if dev.ready_for_new_project? %>
+                <span class="badge bg-accent-100 text-accent-800 ring-1 ring-accent-200">Ready</span>
+              <% else %>
+                <span class="text-ink-400">—</span>
+              <% end %>
+            </td>
+            <td class="table-cell"><%= rating_stars(dev.rating) %></td>
+            <td class="table-cell"><%= dev.b2b_eligible.nil? ? "—" : (dev.b2b_eligible? ? "Yes" : "No") %></td>
+            <td class="table-cell text-right">
+              <% if can?(:manage_all_records) || (current_user.team_lead? && accessible_developer?(dev)) || (current_user.developer? && owns_record?(dev)) %>
+                <%= link_to "Edit", edit_developer_path(dev), class: "text-xs font-semibold text-accent-700 hover:text-accent-900" %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+        <% if @developers.empty? %>
+          <tr><td colspan="9" class="table-cell py-10 text-center text-ink-400">No developers match this filter.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

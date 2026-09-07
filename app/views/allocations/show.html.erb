@@ -1,0 +1,21 @@
+<% content_for :page_title, "Allocation" %>
+<% content_for :page_description, "#{@allocation.developer.name} on #{@allocation.project.name}" %>
+
+<div class="mb-5 flex justify-between">
+  <%= link_to "← Bench", bench_path, class: "text-sm font-medium text-ink-500 hover:text-ink-800" %>
+  <% if can?(:manage_allocations) %>
+    <div class="flex gap-2">
+      <%= link_to "Edit", edit_allocation_path(@allocation), class: "btn-secondary" %>
+      <%= button_to "Delete", allocation_path(@allocation), method: :delete, class: "btn-danger", form: { data: { turbo_confirm: "Remove allocation?" } } %>
+    </div>
+  <% end %>
+</div>
+
+<div class="mx-auto max-w-xl card p-6 space-y-3 text-sm">
+  <p><span class="text-ink-400">Developer</span> · <%= link_to @allocation.developer.name, @allocation.developer, class: "font-semibold text-accent-700" %></p>
+  <p><span class="text-ink-400">Project</span> · <%= link_to @allocation.project.name, @allocation.project, class: "font-semibold text-accent-700" %></p>
+  <p><span class="text-ink-400">Role</span> · <%= status_badge(@allocation.role) %></p>
+  <p><span class="text-ink-400">Allocation</span> · <strong><%= @allocation.allocation_pct %>%</strong> (<%= hours_label(@allocation.allocated_hours) %>/mo)</p>
+  <p><span class="text-ink-400">Dates</span> · <%= l(@allocation.start_on) %> → <%= @allocation.end_on ? l(@allocation.end_on) : "open" %></p>
+  <% if @allocation.notes.present? %><p class="rounded-xl bg-ink-50 p-3 text-ink-700"><%= @allocation.notes %></p><% end %>
+</div>

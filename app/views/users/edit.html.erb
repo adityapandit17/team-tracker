@@ -1,0 +1,6 @@
+<% content_for :page_title, "Edit account" %>
+<% content_for :page_description, @user.email %>
+
+<div class="max-w-2xl card p-6">
+  <%= render "form", user: @user %>
+</div>

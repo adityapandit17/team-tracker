@@ -1,0 +1,36 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  host: <%= ENV.fetch("DB_HOST") { "localhost" } %>
+  username: <%= ENV.fetch("DB_USERNAME") { "developer" } %>
+  password: <%= ENV.fetch("DB_PASSWORD") { "" } %>
+
+development:
+  primary:
+    <<: *default
+    database: team_tracker_development
+  queue:
+    <<: *default
+    database: team_tracker_development_queue
+    migrations_paths: db/queue_migrate
+
+test:
+  primary:
+    <<: *default
+    database: team_tracker_test
+  queue:
+    <<: *default
+    database: team_tracker_test_queue
+    migrations_paths: db/queue_migrate
+
+production:
+  primary: &primary_production
+    <<: *default
+    database: team_tracker_production
+    username: <%= ENV["DB_USERNAME"] %>
+    password: <%= ENV["DB_PASSWORD"] %>
+  queue:
+    <<: *primary_production
+    database: team_tracker_production_queue
+    migrations_paths: db/queue_migrate

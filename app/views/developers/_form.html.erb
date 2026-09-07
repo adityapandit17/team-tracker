@@ -1,0 +1,114 @@
+<%= form_with model: developer, class: "space-y-5" do |f| %>
+  <% if developer.errors.any? %>
+    <div class="rounded-md bg-red-50 p-3 text-sm text-red-700">
+      <ul class="list-disc pl-4">
+        <% developer.errors.full_messages.each do |msg| %><li><%= msg %></li><% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <% full_fields = can?(:manage_all_records) || current_user.team_lead? %>
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <% if full_fields %>
+      <div>
+        <%= f.label :name, class: "label" %>
+        <%= f.text_field :name, class: "input" %>
+      </div>
+      <div>
+        <%= f.label :stack, class: "label" %>
+        <%= f.select :stack, Developer.stacks.keys.map { |s| [s.upcase, s] }, {}, class: "input" %>
+      </div>
+      <div>
+        <%= f.label :education_detail, "Education", class: "label" %>
+        <%= f.text_field :education_detail, class: "input" %>
+      </div>
+      <div>
+        <%= f.label :passing_year, class: "label" %>
+        <%= f.number_field :passing_year, class: "input" %>
+      </div>
+    <% end %>
+    <div>
+      <%= f.label :availability_status, "Availability", class: "label" %>
+      <%= f.select :availability_status, Developer.availability_statuses.keys.map { |s| [s.humanize, s] }, {}, class: "input" %>
+    </div>
+    <% if full_fields %>
+      <div>
+        <%= f.label :on_call_count, "On call (count)", class: "label" %>
+        <%= f.number_field :on_call_count, class: "input" %>
+      </div>
+      <div>
+        <%= f.label :rating, "Rating (0–5)", class: "label" %>
+        <%= f.number_field :rating, step: 0.5, min: 0, max: 5, class: "input" %>
+      </div>
+      <% if can?(:manage_all_records) || can?(:view_utilization) %>
+        <div>
+          <%= f.label :hourly_cost, "Hourly cost (₹)", class: "label" %>
+          <%= f.number_field :hourly_cost, step: 1, min: 0, class: "input", placeholder: "Internal cost" %>
+        </div>
+      <% end %>
+    <% end %>
+
+    <% if can?(:manage_all_records) %>
+      <div>
+        <%= f.label :team_lead_id, "Team lead", class: "label" %>
+        <%= f.collection_select :team_lead_id, team_lead_options, :id, :display_name, { include_blank: "Unassigned" }, class: "input" %>
+        <p class="mt-1 text-xs text-ink-400">Assign this developer to a team lead’s roster.</p>
+      </div>
+    <% elsif current_user.team_lead? && developer.team_lead_id == current_user.id %>
+      <div>
+        <span class="label">Team lead</span>
+        <p class="rounded-lg border border-ink-100 bg-ink-50 px-3 py-2 text-sm text-ink-700"><%= current_user.display_name %> (you)</p>
+      </div>
+    <% end %>
+
+    <div class="flex items-center gap-4 pt-6">
+      <label class="flex items-center gap-2 text-sm text-slate-700">
+        <%= f.check_box :ready_for_new_project, class: "rounded border-slate-300 text-primary-600 focus:ring-primary-500" %>
+        Ready for new project
+      </label>
+      <% if full_fields %>
+        <label class="flex items-center gap-2 text-sm text-slate-700">
+          <%= f.check_box :b2b_eligible, class: "rounded border-slate-300 text-primary-600 focus:ring-primary-500" %>
+          B2B eligible
+        </label>
+      <% end %>
+    </div>
+  </div>
+
+  <% if can?(:manage_incentives) %>
+    <div class="rounded-2xl border border-ink-100 bg-ink-50/60 p-4">
+      <h3 class="text-sm font-semibold text-ink-950">Lead incentive</h3>
+      <p class="mt-1 text-xs text-ink-500">
+        Fixed pay for projects under this member as project lead.
+        Example: 5 eligible projects, free threshold 2 → incentive on 3 × amount.
+      </p>
+      <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div class="flex items-end">
+          <label class="flex items-center gap-2 text-sm text-slate-700">
+            <%= f.check_box :incentive_eligible, class: "rounded border-slate-300 text-primary-600 focus:ring-primary-500" %>
+            Lead incentive eligible
+          </label>
+        </div>
+        <div>
+          <%= f.label :incentive_free_project_count, "Free projects (threshold)", class: "label" %>
+          <%= f.number_field :incentive_free_project_count, min: 0, step: 1, class: "input" %>
+        </div>
+        <div>
+          <%= f.label :incentive_amount_per_project, "Amount per project (₹)", class: "label" %>
+          <%= f.number_field :incentive_amount_per_project, min: 0, step: 1, class: "input", placeholder: "Fixed amount" %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <div>
+    <%= f.label :notes, class: "label" %>
+    <%= f.text_area :notes, rows: 3, class: "input" %>
+  </div>
+
+  <div class="flex justify-end gap-2">
+    <%= link_to "Cancel", developers_path, class: "btn-secondary" %>
+    <%= f.submit class: "btn-primary" %>
+  </div>
+<% end %>

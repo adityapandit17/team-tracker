@@ -1,0 +1,19 @@
+<h2 class="font-display text-xl font-semibold text-ink-950">Forgot password?</h2>
+<p class="mt-1 text-sm text-ink-500">We’ll email you a reset link.</p>
+
+<%= form_for(resource, as: resource_name, url: password_path(resource_name), html: { method: :post, class: "mt-6 space-y-4" }) do |f| %>
+  <%= render "users/shared/error_messages", resource: resource %>
+
+  <div>
+    <%= f.label :email, class: "label" %>
+    <%= f.email_field :email, autofocus: true, autocomplete: "email", class: "input" %>
+  </div>
+
+  <div class="pt-2">
+    <%= f.submit "Send reset instructions", class: "btn-primary w-full" %>
+  </div>
+<% end %>
+
+<div class="mt-5 border-t border-ink-100 pt-4 text-sm text-ink-500">
+  <%= render "users/shared/links" %>
+</div>

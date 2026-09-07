@@ -1,0 +1,5 @@
+<% content_for :page_title, current_user.team_lead? ? "Add Team Developer" : "Add Developer" %>
+<% content_for :page_description, current_user.team_lead? ? "New developer will be assigned to your team" : "Create a developer and optionally assign a team lead" %>
+<div class="max-w-2xl card p-6">
+  <%= render "form", developer: @developer %>
+</div>

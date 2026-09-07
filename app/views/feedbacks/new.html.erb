@@ -1,0 +1,8 @@
+<% content_for :page_title, "New Feedback" %>
+<% content_for :page_description, @developer ? "For #{@developer.name}" : "Add developer feedback" %>
+
+<div class="mx-auto max-w-2xl">
+  <div class="card p-6">
+    <%= render "form", feedback: @feedback %>
+  </div>
+</div>

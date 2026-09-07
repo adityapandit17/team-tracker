@@ -1,0 +1,115 @@
+<% content_for :page_title, "Billing overview" %>
+<% content_for :page_description, "Bird’s-eye view of project billings — drafts, pending, cleared" %>
+
+<div class="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Draft entries</p>
+    <p class="stat-value text-2xl"><%= @overview[:draft_entries] %></p>
+    <p class="text-xs text-ink-500">Auto-created at month end</p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Open (draft + pending)</p>
+    <p class="stat-value text-2xl"><%= @overview[:open_entries] %></p>
+    <p class="text-xs text-ink-500"><%= hours_label(@overview[:pending_hours]) %> · <%= money(@overview[:pending_amount]) %></p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Cleared entries</p>
+    <p class="stat-value text-2xl"><%= @overview[:cleared_entries] %></p>
+    <p class="text-xs text-ink-500"><%= hours_label(@overview[:cleared_hours]) %> · <%= money(@overview[:cleared_amount]) %></p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase tracking-wide text-ink-400">This month open</p>
+    <p class="stat-value text-2xl"><%= @overview[:this_month_open] %></p>
+  </div>
+</div>
+
+<div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div class="flex flex-wrap gap-2">
+    <%= link_to "All", billings_path, class: params[:billing_status].blank? && params[:billing_type].blank? ? "chip-active" : "chip" %>
+    <%= link_to "Drafts", billings_path(billing_status: "draft"), class: params[:billing_status] == "draft" ? "chip-active" : "chip" %>
+    <%= link_to "Pending", billings_path(billing_status: "pending"), class: params[:billing_status] == "pending" ? "chip-active" : "chip" %>
+    <%= link_to "Open", billings_path(billing_status: "open"), class: params[:billing_status] == "open" ? "chip-active" : "chip" %>
+    <%= link_to "Cleared", billings_path(billing_status: "cleared"), class: params[:billing_status] == "cleared" ? "chip-active" : "chip" %>
+    <%= link_to "Monthly", billings_path(billing_type: "monthly"), class: params[:billing_type] == "monthly" ? "chip-active" : "chip" %>
+    <%= link_to "Fixed price", billings_path(billing_type: "fixed_price"), class: params[:billing_type] == "fixed_price" ? "chip-active" : "chip" %>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 gap-4 xl:grid-cols-3">
+  <div class="card overflow-hidden xl:col-span-2">
+    <div class="border-b border-ink-100 px-4 py-3">
+      <h2 class="font-display text-lg font-semibold text-ink-950">Projects</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[720px]">
+        <thead class="bg-ink-50/80">
+          <tr>
+            <th class="table-head">Project</th>
+            <th class="table-head">Type</th>
+            <th class="table-head">Start</th>
+            <th class="table-head">Hours</th>
+            <th class="table-head">Open</th>
+            <th class="table-head">Latest</th>
+            <th class="table-head"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-ink-100 bg-white/50">
+          <% @projects.each do |project| %>
+            <% summary = project.billing_summary %>
+            <% open_count = summary[:draft_count] + summary[:pending_count] %>
+            <tr class="transition hover:bg-accent-50/40">
+              <td class="table-cell font-medium text-ink-950">
+                <%= link_to project.name, project, class: "hover:text-accent-700" %>
+                <p class="text-[11px] text-ink-400"><%= project.main_developer&.name || "Unassigned" %></p>
+              </td>
+              <td class="table-cell"><%= status_badge(project.billing_type) %></td>
+              <td class="table-cell text-ink-500"><%= project.start_date&.strftime("%b %Y") || "—" %></td>
+              <td class="table-cell"><%= hours_label(summary[:total_hours]) %></td>
+              <td class="table-cell">
+                <% if open_count.positive? %>
+                  <span class="badge bg-amber-50 text-amber-800 ring-1 ring-amber-200"><%= open_count %> open</span>
+                <% else %>
+                  <span class="badge bg-accent-100 text-accent-800 ring-1 ring-accent-200">Clear</span>
+                <% end %>
+              </td>
+              <td class="table-cell text-ink-500">
+                <% if summary[:latest] %>
+                  <%= summary[:latest].month_label %> · <%= status_badge(summary[:latest].status) %>
+                <% else %>
+                  —
+                <% end %>
+              </td>
+              <td class="table-cell text-right">
+                <%= link_to "Details", project_project_billings_path(project), class: "text-xs font-semibold text-accent-700 hover:text-accent-900" %>
+              </td>
+            </tr>
+          <% end %>
+          <% if @projects.empty? %>
+            <tr><td colspan="7" class="table-cell py-10 text-center text-ink-400">No projects match this filter.</td></tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card p-5">
+    <h2 class="font-display text-lg font-semibold text-ink-950">Recent open billings</h2>
+    <p class="mt-1 text-xs text-ink-500">Drafts and pending — needs attention</p>
+    <ul class="mt-4 space-y-2">
+      <% @recent_pending.each do |billing| %>
+        <li class="rounded-xl border border-ink-100 bg-white/70 px-3 py-2.5">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <%= link_to billing.project.name, project_project_billings_path(billing.project), class: "text-sm font-semibold text-ink-900 hover:text-accent-700" %>
+              <p class="text-xs text-ink-500"><%= billing.month_label %> · <%= hours_label(billing.hours_billed) %></p>
+            </div>
+            <%= status_badge(billing.status) %>
+          </div>
+        </li>
+      <% end %>
+      <% if @recent_pending.empty? %>
+        <li class="text-sm text-ink-400">No open billings.</li>
+      <% end %>
+    </ul>
+  </div>
+</div>

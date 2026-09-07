@@ -1,0 +1,67 @@
+<%= form_with model: action_item, url: (action_item.persisted? ? action_item_path(action_item) : (@developer ? developer_action_items_path(@developer) : action_items_path)), class: "space-y-5" do |f| %>
+  <% if action_item.errors.any? %>
+    <div class="rounded-md bg-red-50 p-3 text-sm text-red-700">
+      <ul class="list-disc pl-4">
+        <% action_item.errors.full_messages.each do |msg| %><li><%= msg %></li><% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div class="sm:col-span-2">
+      <%= f.label :title, class: "label" %>
+      <%= f.text_field :title, class: "input", placeholder: "What needs to be done?" %>
+    </div>
+
+    <% if @developer %>
+      <%= f.hidden_field :developer_id, value: @developer.id %>
+      <div>
+        <p class="label">Developer</p>
+        <p class="text-sm font-medium text-ink-900"><%= @developer.name %></p>
+      </div>
+    <% elsif can?(:manage_developer_action_items) %>
+      <div>
+        <%= f.label :developer_id, "Developer (optional)", class: "label" %>
+        <%= f.collection_select :developer_id, scoped_developers.order(:name), :id, :name, { include_blank: "Personal todo" }, class: "input" %>
+      </div>
+    <% else %>
+      <%= f.hidden_field :developer_id, value: nil %>
+      <div>
+        <p class="label">Type</p>
+        <p class="text-sm font-medium text-ink-900">Personal todo</p>
+      </div>
+    <% end %>
+
+    <% if can?(:manage_developer_action_items) %>
+      <div>
+        <%= f.label :assignee_id, "Assignee", class: "label" %>
+        <%= f.collection_select :assignee_id, User.order(:name), :id, :display_name, {}, class: "input" %>
+      </div>
+    <% else %>
+      <%= f.hidden_field :assignee_id, value: current_user.id %>
+    <% end %>
+
+    <div>
+      <%= f.label :priority, class: "label" %>
+      <%= f.select :priority, ActionItem.priorities.keys.map { |p| [p.humanize, p] }, {}, class: "input" %>
+    </div>
+    <div>
+      <%= f.label :status, class: "label" %>
+      <%= f.select :status, ActionItem.statuses.keys.map { |s| [s.humanize, s] }, {}, class: "input" %>
+    </div>
+    <div>
+      <%= f.label :due_on, "Due date", class: "label" %>
+      <%= f.date_field :due_on, class: "input" %>
+    </div>
+  </div>
+
+  <div>
+    <%= f.label :description, class: "label" %>
+    <%= f.text_area :description, rows: 4, class: "input" %>
+  </div>
+
+  <div class="flex justify-end gap-2">
+    <%= link_to "Cancel", (@developer ? developer_path(@developer) : action_items_path), class: "btn-secondary" %>
+    <%= f.submit class: "btn-primary" %>
+  </div>
+<% end %>

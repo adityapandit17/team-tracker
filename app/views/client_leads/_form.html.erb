@@ -1,0 +1,48 @@
+<%= form_with model: client_lead, class: "space-y-5" do |f| %>
+  <% if client_lead.errors.any? %>
+    <div class="rounded-md bg-red-50 p-3 text-sm text-red-700">
+      <ul class="list-disc pl-4">
+        <% client_lead.errors.full_messages.each do |msg| %><li><%= msg %></li><% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <% if can?(:manage_all_records) %>
+      <div>
+        <%= f.label :client_name, "Client", class: "label" %>
+        <%= f.text_field :client_name, class: "input" %>
+      </div>
+      <div>
+        <%= f.label :assignee_id, "Assignee", class: "label" %>
+        <%= f.collection_select :assignee_id, Developer.order(:name), :id, :name, { include_blank: "—" }, class: "input" %>
+      </div>
+    <% end %>
+    <div>
+      <%= f.label :calls, class: "label" %>
+      <%= f.text_field :calls, class: "input" %>
+    </div>
+    <div>
+      <%= f.label :tests, class: "label" %>
+      <%= f.text_field :tests, class: "input" %>
+    </div>
+    <div>
+      <%= f.label :rounds, class: "label" %>
+      <%= f.number_field :rounds, class: "input" %>
+    </div>
+    <div>
+      <%= f.label :status, class: "label" %>
+      <%= f.select :status, ClientLead.statuses.keys.map { |s| [s.humanize, s] }, {}, class: "input" %>
+    </div>
+  </div>
+
+  <div>
+    <%= f.label :remarks, class: "label" %>
+    <%= f.text_area :remarks, rows: 3, class: "input" %>
+  </div>
+
+  <div class="flex justify-end gap-2">
+    <%= link_to "Cancel", client_leads_path, class: "btn-secondary" %>
+    <%= f.submit class: "btn-primary" %>
+  </div>
+<% end %>

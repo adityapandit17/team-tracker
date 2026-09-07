@@ -1,0 +1,3 @@
+<% content_for :page_title, "New growth plan" %>
+<% content_for :page_description, @developer ? "For #{@developer.name}" : "Set goals and review cadence" %>
+<div class="mx-auto max-w-2xl"><div class="card p-6"><%= render "form", growth_plan: @growth_plan %></div></div>

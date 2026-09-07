@@ -1,0 +1,8 @@
+<% content_for :page_title, "Edit Feedback" %>
+<% content_for :page_description, @feedback.developer.name %>
+
+<div class="mx-auto max-w-2xl">
+  <div class="card p-6">
+    <%= render "form", feedback: @feedback %>
+  </div>
+</div>

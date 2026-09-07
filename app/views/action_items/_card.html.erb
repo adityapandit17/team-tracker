@@ -1,0 +1,26 @@
+<article
+  class="cursor-grab rounded-xl border border-ink-200/80 bg-white/90 p-3 shadow-sm active:cursor-grabbing"
+  draggable="true"
+  data-item-id="<%= item.id %>"
+  data-action="dragstart->kanban#dragStart dragend->kanban#dragEnd">
+  <div class="flex items-start justify-between gap-2">
+    <h4 class="text-sm font-semibold text-ink-950"><%= link_to item.title, item, class: "hover:text-accent-700" %></h4>
+    <%= status_badge(item.priority) %>
+  </div>
+  <% if item.description.present? %>
+    <p class="mt-1.5 line-clamp-2 text-xs text-ink-500"><%= item.description %></p>
+  <% end %>
+  <div class="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-ink-400">
+    <% if item.developer %>
+      <span class="font-medium text-ink-600"><%= item.developer.name %></span>
+    <% else %>
+      <span>Personal</span>
+    <% end %>
+    <span>·</span>
+    <span><%= item.assignee.display_name %></span>
+    <% if item.due_on %>
+      <span>·</span>
+      <span class="<%= item.due_on < Date.current && !item.done? ? 'text-red-600 font-semibold' : '' %>">Due <%= l(item.due_on) %></span>
+    <% end %>
+  </div>
+</article>

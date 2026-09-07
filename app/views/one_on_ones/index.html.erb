@@ -1,0 +1,72 @@
+<% content_for :page_title, @developer ? "#{@developer.name} — 1:1s" : "1:1s" %>
+<% content_for :page_description, "Cadence notes, goals, and next review dates" %>
+
+<div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div class="flex flex-wrap gap-2">
+    <% if @developer %>
+      <%= link_to "← #{@developer.name}", @developer, class: "text-sm font-medium text-ink-500 hover:text-ink-800" %>
+    <% else %>
+      <%= link_to "All", one_on_ones_path, class: params[:status].blank? ? "chip-active" : "chip" %>
+      <% OneOnOne.statuses.keys.each do |s| %>
+        <%= link_to s.humanize, one_on_ones_path(status: s), class: params[:status] == s ? "chip-active" : "chip" %>
+      <% end %>
+    <% end %>
+  </div>
+  <% if can?(:manage_one_on_ones) %>
+    <%= link_to "+ Log 1:1", (@developer ? new_developer_one_on_one_path(@developer) : new_one_on_one_path), class: "btn-primary" %>
+  <% end %>
+</div>
+
+<% if @due_reviews.any? && params[:status].blank? %>
+  <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-900">
+    <strong><%= @due_reviews.size %></strong> review<%= @due_reviews.size == 1 ? "" : "s" %> due —
+    follow up on next review dates.
+  </div>
+<% end %>
+
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[800px]">
+      <thead class="bg-ink-50/80">
+        <tr>
+          <% unless @developer %><th class="table-head">Developer</th><% end %>
+          <th class="table-head">Meeting</th>
+          <th class="table-head">Next review</th>
+          <th class="table-head">Growth plan</th>
+          <th class="table-head">Status</th>
+          <th class="table-head">Conductor</th>
+          <th class="table-head"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-ink-100 bg-white/50">
+        <% @one_on_ones.each do |ooo| %>
+          <tr class="transition hover:bg-accent-50/40">
+            <% unless @developer %>
+              <td class="table-cell font-medium"><%= link_to ooo.developer.name, ooo.developer, class: "hover:text-accent-700" %></td>
+            <% end %>
+            <td class="table-cell">
+              <%= link_to l(ooo.meeting_on), ooo, class: "font-medium text-ink-950 hover:text-accent-700" %>
+              <% if ooo.goals.present? %><p class="mt-0.5 line-clamp-1 text-xs text-ink-400"><%= ooo.goals %></p><% end %>
+            </td>
+            <td class="table-cell">
+              <% if ooo.next_review_on %>
+                <span class="<%= ooo.overdue_review? ? 'font-semibold text-red-600' : 'text-ink-600' %>"><%= l(ooo.next_review_on) %></span>
+              <% else %>—<% end %>
+            </td>
+            <td class="table-cell text-ink-500"><%= ooo.growth_plan&.title || "—" %></td>
+            <td class="table-cell"><%= status_badge(ooo.status) %></td>
+            <td class="table-cell text-ink-500"><%= ooo.conductor.display_name %></td>
+            <td class="table-cell text-right">
+              <% if can?(:manage_one_on_ones) && (can?(:manage_all_records) || owns_record?(ooo)) %>
+                <%= link_to "Edit", edit_one_on_one_path(ooo), class: "text-xs font-semibold text-accent-700" %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+        <% if @one_on_ones.empty? %>
+          <tr><td colspan="7" class="table-cell py-10 text-center text-ink-400">No 1:1s yet.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,97 @@
+<% content_for :page_title, "#{@developer.name} · incentives" %>
+<% content_for :page_description, "Projects led · eligible list · fixed incentive calculation" %>
+
+<div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <%= link_to "← All incentives", incentives_path, class: "text-sm font-medium text-ink-500 hover:text-ink-800" %>
+  <div class="flex flex-wrap gap-2">
+    <%= link_to "Developer profile", @developer, class: "btn-secondary" %>
+    <% if can?(:manage_incentives) %>
+      <%= link_to "Edit incentive settings", edit_developer_path(@developer), class: "btn-secondary" %>
+    <% end %>
+  </div>
+</div>
+
+<div class="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase text-ink-400">Lead eligible</p>
+    <p class="stat-value text-2xl"><%= @summary.lead_eligible ? "Yes" : "No" %></p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase text-ink-400">Led projects</p>
+    <p class="stat-value text-2xl"><%= @summary.total_led_projects %></p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase text-ink-400">Eligible</p>
+    <p class="stat-value text-2xl"><%= @summary.eligible_projects.size %></p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase text-ink-400">After free (<%= @summary.free_threshold %>)</p>
+    <p class="stat-value text-2xl"><%= @summary.incentive_project_count %></p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase text-ink-400">Incentive</p>
+    <p class="stat-value text-2xl"><%= money(@summary.total_amount) %></p>
+    <p class="text-xs text-ink-500"><%= money(@summary.amount_per_project) %> × <%= @summary.incentive_project_count %></p>
+  </div>
+</div>
+
+<div class="card overflow-hidden">
+  <div class="border-b border-ink-100 px-4 py-3">
+    <h2 class="font-display text-lg font-semibold">Projects under this lead</h2>
+    <p class="mt-0.5 text-xs text-ink-500">Ordered by start date · free threshold applied to eligible projects first</p>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[720px]">
+      <thead class="bg-ink-50/80">
+        <tr>
+          <th class="table-head">Project</th>
+          <th class="table-head">Status</th>
+          <th class="table-head">Start</th>
+          <th class="table-head">Project eligible</th>
+          <th class="table-head">Counts for pay</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-ink-100 bg-white/50">
+        <% @summary.projects.each do |row| %>
+          <tr class="<%= row.counts_toward_incentive ? 'bg-accent-50/30' : '' %>">
+            <td class="table-cell font-medium">
+              <%= link_to row.project.name, row.project, class: "hover:text-accent-700" %>
+            </td>
+            <td class="table-cell"><%= status_badge(row.project.status) %></td>
+            <td class="table-cell text-ink-500"><%= row.project.start_date&.strftime("%b %Y") || "—" %></td>
+            <td class="table-cell">
+              <% if row.project.incentive_eligible? %>
+                <span class="badge bg-accent-100 text-accent-800 ring-1 ring-accent-200">Yes</span>
+              <% else %>
+                <span class="badge bg-ink-100 text-ink-600 ring-1 ring-ink-200">No</span>
+              <% end %>
+            </td>
+            <td class="table-cell">
+              <% if row.counts_toward_incentive %>
+                <span class="badge bg-accent-100 text-accent-800 ring-1 ring-accent-200">Incentive</span>
+              <% elsif row.within_free_threshold %>
+                <span class="badge bg-amber-50 text-amber-800 ring-1 ring-amber-200">Free threshold</span>
+              <% elsif !@summary.lead_eligible %>
+                <span class="text-xs text-ink-400">Lead not eligible</span>
+              <% elsif !row.project.incentive_eligible? %>
+                <span class="text-xs text-ink-400">Project not eligible</span>
+              <% else %>
+                <span class="text-xs text-ink-400">—</span>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+        <% if @summary.projects.empty? %>
+          <tr>
+            <td colspan="5" class="table-cell py-10 text-center text-ink-400">
+              No active/hold projects assigned to this lead.
+              <% if can?(:manage_all_records) %>
+                <%= link_to "Assign on a project →", projects_path, class: "font-semibold text-accent-700" %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

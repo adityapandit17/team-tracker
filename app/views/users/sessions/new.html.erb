@@ -1,0 +1,29 @@
+<h2 class="font-display text-xl font-semibold text-ink-950">Log in</h2>
+<p class="mt-1 text-sm text-ink-500">Use your work email and password.</p>
+
+<%= form_for(resource, as: resource_name, url: session_path(resource_name), html: { class: "mt-6 space-y-4" }) do |f| %>
+  <div>
+    <%= f.label :email, class: "label" %>
+    <%= f.email_field :email, autofocus: true, autocomplete: "email", class: "input" %>
+  </div>
+
+  <div>
+    <%= f.label :password, class: "label" %>
+    <%= f.password_field :password, autocomplete: "current-password", class: "input" %>
+  </div>
+
+  <% if devise_mapping.rememberable? %>
+    <label class="flex items-center gap-2 text-sm text-ink-700">
+      <%= f.check_box :remember_me, class: "rounded border-ink-300 text-accent-600 focus:ring-accent-500" %>
+      Remember me
+    </label>
+  <% end %>
+
+  <div class="pt-2">
+    <%= f.submit "Sign in", class: "btn-primary w-full" %>
+  </div>
+<% end %>
+
+<div class="mt-5 border-t border-ink-100 pt-4 text-sm text-ink-500">
+  <%= render "users/shared/links" %>
+</div>

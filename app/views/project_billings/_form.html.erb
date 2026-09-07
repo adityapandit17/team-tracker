@@ -1,0 +1,39 @@
+<%= form_with model: [@project, billing], class: "space-y-5" do |f| %>
+  <% if billing.errors.any? %>
+    <div class="rounded-md bg-red-50 p-3 text-sm text-red-700">
+      <ul class="list-disc pl-4">
+        <% billing.errors.full_messages.each do |msg| %><li><%= msg %></li><% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div>
+      <%= f.label :billing_month, "Month", class: "label" %>
+      <%= f.date_field :billing_month, class: "input" %>
+      <p class="mt-1 text-xs text-ink-400">Any day in the month is fine — we store the 1st.</p>
+    </div>
+    <div>
+      <%= f.label :status, class: "label" %>
+      <%= f.select :status, ProjectBilling.statuses.keys.map { |s| [s.humanize, s] }, {}, class: "input" %>
+    </div>
+    <div>
+      <%= f.label :hours_billed, "Hours billed", class: "label" %>
+      <%= f.number_field :hours_billed, step: 0.5, min: 0, class: "input" %>
+    </div>
+    <div>
+      <%= f.label :amount, "Amount (₹)", class: "label" %>
+      <%= f.number_field :amount, step: 0.01, min: 0, class: "input" %>
+    </div>
+  </div>
+
+  <div>
+    <%= f.label :notes, class: "label" %>
+    <%= f.text_area :notes, rows: 3, class: "input" %>
+  </div>
+
+  <div class="flex justify-end gap-2">
+    <%= link_to "Cancel", project_project_billings_path(@project), class: "btn-secondary" %>
+    <%= f.submit class: "btn-primary" %>
+  </div>
+<% end %>

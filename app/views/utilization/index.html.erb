@@ -1,0 +1,115 @@
+<% content_for :page_title, "Utilization & margin" %>
+<% content_for :page_description, "Hours billed vs allocated · revenue vs cost for #{@month.strftime('%B %Y')}" %>
+
+<div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <%= form_with url: utilization_index_path, method: :get, class: "flex items-center gap-2", data: { controller: "auto-submit", action: "change->auto-submit#submit" } do %>
+    <label class="text-xs font-semibold uppercase text-ink-500">Month</label>
+    <%= month_field_tag :month, @month.strftime("%Y-%m"), class: "input !w-auto !py-1.5 text-xs" %>
+  <% end %>
+  <div class="flex gap-2">
+    <%= link_to "Bench", bench_path, class: "btn-secondary" if can?(:manage_allocations) %>
+    <%= link_to "Billings", billings_path, class: "btn-secondary" if can?(:view_billings) %>
+  </div>
+</div>
+
+<div class="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase text-ink-400">Utilization</p>
+    <p class="stat-value text-2xl"><%= @totals[:utilization_pct] ? "#{@totals[:utilization_pct]}%" : "—" %></p>
+    <p class="text-xs text-ink-500"><%= hours_label(@totals[:billed_hours]) %> / <%= hours_label(@totals[:allocated_hours]) %></p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase text-ink-400">Revenue</p>
+    <p class="stat-value text-2xl"><%= money(@totals[:revenue]) %></p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase text-ink-400">Cost</p>
+    <p class="stat-value text-2xl"><%= money(@totals[:cost]) %></p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase text-ink-400">Margin</p>
+    <p class="stat-value text-2xl <%= @totals[:margin].to_f.negative? ? 'text-red-600' : '' %>"><%= money(@totals[:margin]) %></p>
+    <p class="text-xs text-ink-500"><%= @totals[:margin_pct] ? "#{@totals[:margin_pct]}%" : "—" %> · <%= @totals[:bench_count] %> on bench</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+  <div class="card overflow-hidden">
+    <div class="border-b border-ink-100 px-4 py-3">
+      <h2 class="font-display text-lg font-semibold">By developer</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[560px]">
+        <thead class="bg-ink-50/80">
+          <tr>
+            <th class="table-head">Developer</th>
+            <th class="table-head">Alloc</th>
+            <th class="table-head">Billed</th>
+            <th class="table-head">Util</th>
+            <th class="table-head">Margin</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-ink-100 bg-white/50">
+          <% @report.developer_rows.each do |row| %>
+            <tr class="<%= row[:bench] ? 'bg-amber-50/40' : '' %>">
+              <td class="table-cell font-medium">
+                <%= link_to row[:developer].name, row[:developer], class: "hover:text-accent-700" %>
+                <% if row[:bench] %><span class="ml-1 badge bg-amber-50 text-amber-800 ring-1 ring-amber-200">Bench</span><% end %>
+              </td>
+              <td class="table-cell"><%= hours_label(row[:allocated_hours]) %></td>
+              <td class="table-cell"><%= hours_label(row[:billed_hours]) %></td>
+              <td class="table-cell"><%= row[:utilization_pct] ? "#{row[:utilization_pct]}%" : "—" %></td>
+              <td class="table-cell <%= row[:margin].to_f.negative? ? 'text-red-600 font-semibold' : '' %>"><%= money(row[:margin]) %></td>
+            </tr>
+          <% end %>
+          <% if @report.developer_rows.empty? %>
+            <tr><td colspan="5" class="table-cell py-8 text-center text-ink-400">No developers in scope.</td></tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card overflow-hidden">
+    <div class="border-b border-ink-100 px-4 py-3">
+      <h2 class="font-display text-lg font-semibold">By project</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[560px]">
+        <thead class="bg-ink-50/80">
+          <tr>
+            <th class="table-head">Project</th>
+            <th class="table-head">Alloc</th>
+            <th class="table-head">Billed</th>
+            <th class="table-head">Revenue</th>
+            <th class="table-head">Margin</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-ink-100 bg-white/50">
+          <% @report.project_rows.each do |row| %>
+            <tr>
+              <td class="table-cell font-medium"><%= link_to row[:project].name, row[:project], class: "hover:text-accent-700" %></td>
+              <td class="table-cell"><%= hours_label(row[:allocated_hours]) %></td>
+              <td class="table-cell"><%= hours_label(row[:billed_hours]) %></td>
+              <td class="table-cell"><%= money(row[:revenue]) %></td>
+              <td class="table-cell <%= row[:margin].to_f.negative? ? 'text-red-600 font-semibold' : '' %>">
+                <%= money(row[:margin]) %>
+                <% if row[:margin_pct] %><span class="text-xs text-ink-400"> (<%= row[:margin_pct] %>%)</span><% end %>
+              </td>
+            </tr>
+          <% end %>
+          <% if @report.project_rows.empty? %>
+            <tr><td colspan="5" class="table-cell py-8 text-center text-ink-400">No projects in scope.</td></tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<p class="mt-4 text-xs text-ink-400">
+  Allocated hours = allocation % × <%= Allocation::STANDARD_MONTHLY_HOURS %>h.
+  Cost = allocated hours × developer hourly cost.
+  Revenue from billing amount for the month (or hourly rate × billed hours if amount blank).
+  Set hourly cost on developers and hourly rate on projects for accurate margins.
+</p>

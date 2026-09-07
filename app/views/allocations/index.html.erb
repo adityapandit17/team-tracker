@@ -1,0 +1,66 @@
+<% content_for :page_title, @developer ? "#{@developer.name} — Allocations" : (@project ? "#{@project.name} — Allocations" : "Allocations") %>
+<% content_for :page_description, "Project staffing percentages" %>
+
+<div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div class="flex flex-wrap gap-2">
+    <% if @developer %>
+      <%= link_to "← #{@developer.name}", @developer, class: "text-sm font-medium text-ink-500 hover:text-ink-800" %>
+    <% elsif @project %>
+      <%= link_to "← #{@project.name}", @project, class: "text-sm font-medium text-ink-500 hover:text-ink-800" %>
+    <% else %>
+      <%= link_to "Bench board", bench_path, class: "chip" %>
+      <%= link_to "All", allocations_path, class: params[:active].blank? ? "chip-active" : "chip" %>
+      <%= link_to "Active", allocations_path(active: "1"), class: params[:active] == "1" ? "chip-active" : "chip" %>
+    <% end %>
+  </div>
+  <% if can?(:manage_allocations) %>
+    <%= link_to "+ Add",
+          (@developer ? new_developer_allocation_path(@developer) : (@project ? new_project_allocation_path(@project) : new_allocation_path)),
+          class: "btn-primary" %>
+  <% end %>
+</div>
+
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[720px]">
+      <thead class="bg-ink-50/80">
+        <tr>
+          <% unless @developer %><th class="table-head">Developer</th><% end %>
+          <% unless @project %><th class="table-head">Project</th><% end %>
+          <th class="table-head">Role</th>
+          <th class="table-head">%</th>
+          <th class="table-head">Hours</th>
+          <th class="table-head">Dates</th>
+          <th class="table-head"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-ink-100 bg-white/50">
+        <% @allocations.each do |allocation| %>
+          <tr class="transition hover:bg-accent-50/40">
+            <% unless @developer %>
+              <td class="table-cell font-medium"><%= link_to allocation.developer.name, allocation.developer, class: "hover:text-accent-700" %></td>
+            <% end %>
+            <% unless @project %>
+              <td class="table-cell"><%= link_to allocation.project.name, allocation.project, class: "hover:text-accent-700" %></td>
+            <% end %>
+            <td class="table-cell"><%= status_badge(allocation.role) %></td>
+            <td class="table-cell font-semibold"><%= allocation.allocation_pct %>%</td>
+            <td class="table-cell"><%= hours_label(allocation.allocated_hours) %></td>
+            <td class="table-cell text-ink-500">
+              <%= l(allocation.start_on) %>
+              → <%= allocation.end_on ? l(allocation.end_on) : "open" %>
+            </td>
+            <td class="table-cell text-right">
+              <% if can?(:manage_allocations) %>
+                <%= link_to "Edit", edit_allocation_path(allocation), class: "text-xs font-semibold text-accent-700" %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+        <% if @allocations.empty? %>
+          <tr><td colspan="7" class="table-cell py-10 text-center text-ink-400">No allocations.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

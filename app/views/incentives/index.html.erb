@@ -1,0 +1,87 @@
+<% content_for :page_title, "Lead incentives" %>
+<% content_for :page_description, "Fixed incentive for projects handled as lead · after free threshold" %>
+
+<div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div class="flex flex-wrap gap-2">
+    <%= link_to "All leads", incentives_path, class: params[:eligible].blank? && params[:with_projects].blank? ? "chip-active" : "chip" %>
+    <%= link_to "Incentive eligible", incentives_path(eligible: "1"), class: params[:eligible] == "1" ? "chip-active" : "chip" %>
+    <%= link_to "With projects", incentives_path(with_projects: "1"), class: params[:with_projects] == "1" ? "chip-active" : "chip" %>
+  </div>
+</div>
+
+<div class="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase text-ink-400">Leads</p>
+    <p class="stat-value text-2xl"><%= @totals[:leads] %></p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase text-ink-400">Led projects</p>
+    <p class="stat-value text-2xl"><%= @totals[:total_led_projects] %></p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase text-ink-400">Incentive projects</p>
+    <p class="stat-value text-2xl"><%= @totals[:incentive_projects] %></p>
+    <p class="text-xs text-ink-500"><%= @totals[:eligible_projects] %> eligible · after free threshold</p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[11px] font-semibold uppercase text-ink-400">Total incentive</p>
+    <p class="stat-value text-2xl"><%= money(@totals[:total_amount]) %></p>
+  </div>
+</div>
+
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[820px]">
+      <thead class="bg-ink-50/80">
+        <tr>
+          <th class="table-head">Lead</th>
+          <th class="table-head">Lead eligible</th>
+          <th class="table-head">Led</th>
+          <th class="table-head">Eligible</th>
+          <th class="table-head">Free</th>
+          <th class="table-head">Incentive #</th>
+          <th class="table-head">Per project</th>
+          <th class="table-head">Total</th>
+          <th class="table-head"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-ink-100 bg-white/50">
+        <% @report.rows.each do |row| %>
+          <tr class="transition hover:bg-accent-50/40">
+            <td class="table-cell font-medium">
+              <%= link_to row.developer.name, incentive_path(row.developer), class: "hover:text-accent-700" %>
+            </td>
+            <td class="table-cell">
+              <% if row.lead_eligible %>
+                <span class="badge bg-accent-100 text-accent-800 ring-1 ring-accent-200">Yes</span>
+              <% else %>
+                <span class="badge bg-ink-100 text-ink-600 ring-1 ring-ink-200">No</span>
+              <% end %>
+            </td>
+            <td class="table-cell"><%= row.total_led_projects %></td>
+            <td class="table-cell"><%= row.eligible_projects.size %></td>
+            <td class="table-cell"><%= row.free_threshold %></td>
+            <td class="table-cell font-semibold"><%= row.incentive_project_count %></td>
+            <td class="table-cell"><%= money(row.amount_per_project) %></td>
+            <td class="table-cell font-semibold"><%= money(row.total_amount) %></td>
+            <td class="table-cell text-right">
+              <%= link_to "Details", incentive_path(row.developer), class: "text-xs font-semibold text-accent-700 hover:text-accent-900" %>
+            </td>
+          </tr>
+        <% end %>
+        <% if @report.rows.empty? %>
+          <tr>
+            <td colspan="9" class="table-cell py-10 text-center text-ink-400">
+              No project leads yet. Assign a lead on a project and mark the lead incentive-eligible.
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<p class="mt-4 text-xs text-ink-400">
+  Formula: (eligible projects − free threshold) × amount per project.
+  A project counts only when both the lead and the project are incentive-eligible. Only active/hold projects are counted.
+</p>

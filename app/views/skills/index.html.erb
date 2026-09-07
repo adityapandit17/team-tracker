@@ -1,0 +1,57 @@
+<% content_for :page_title, "Skill Matrix" %>
+<% content_for :page_description, can?(:edit_own_skills) ? "Click any cell to update proficiency" : "Read-only skill overview" %>
+
+<div class="mb-4 flex flex-wrap items-center gap-2">
+  <% ApplicationHelper::PROFICIENCY_COLORS.each do |level, hex| %>
+    <span class="badge text-ink-800" style="background-color: <%= hex %>"><%= level == "na" ? "NA" : level.humanize %></span>
+  <% end %>
+</div>
+
+<div class="card overflow-hidden">
+  <div class="overflow-auto">
+    <table class="w-full min-w-[900px] text-sm">
+      <thead class="bg-ink-50/80">
+        <tr>
+          <th class="table-head sticky left-0 z-10 bg-ink-50">Name</th>
+          <% @categories.each do |cat| %>
+            <th class="table-head whitespace-nowrap"><%= cat %></th>
+          <% end %>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-ink-100 bg-white/50">
+        <% @developers.each do |dev| %>
+          <tr class="transition hover:bg-accent-50/30">
+            <td class="table-cell sticky left-0 z-10 bg-white/95 font-medium text-ink-950 whitespace-nowrap backdrop-blur">
+              <%= link_to dev.name, dev, class: "hover:text-accent-700" %>
+            </td>
+            <% @categories.each do |cat| %>
+              <% skill = @skill_by_category[cat] %>
+              <% ds = dev.developer_skills.find { |d| d.skill_id == skill&.id } %>
+              <% level = ds&.proficiency || "na" %>
+              <td class="table-cell p-1.5" style="background-color: <%= proficiency_bg(level) %>">
+                <% if skill && (can?(:manage_all_records) || (can?(:edit_own_skills) && owns_record?(dev))) %>
+                  <%= form_with url: update_skill_cell_path, method: :patch, class: "block",
+                                data: { controller: "skill-matrix", action: "change->skill-matrix#submit" } do |f| %>
+                    <%= hidden_field_tag :developer_id, dev.id %>
+                    <%= hidden_field_tag :skill_id, skill.id %>
+                    <select name="proficiency"
+                            class="w-full rounded-lg border border-ink-200/60 py-1.5 pl-2.5 pr-7 text-xs font-semibold text-ink-800 shadow-sm focus:border-accent-500 focus:ring-accent-500"
+                            style="background-color: <%= proficiency_bg(level) %>">
+                      <% DeveloperSkill.proficiencies.keys.each do |opt| %>
+                        <option value="<%= opt %>" <%= "selected" if level == opt %>><%= opt == "na" ? "NA" : opt.humanize %></option>
+                      <% end %>
+                    </select>
+                  <% end %>
+                <% elsif skill %>
+                  <%= proficiency_badge(level) %>
+                <% else %>
+                  <span class="text-xs text-ink-300">—</span>
+                <% end %>
+              </td>
+            <% end %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,8 @@
+<% content_for :page_title, "New Action Item" %>
+<% content_for :page_description, @developer ? "For #{@developer.name}" : "Personal todo or developer action item" %>
+
+<div class="mx-auto max-w-2xl">
+  <div class="card p-6">
+    <%= render "form", action_item: @action_item %>
+  </div>
+</div>

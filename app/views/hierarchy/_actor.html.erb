@@ -1,0 +1,35 @@
+<%# One person in the chart. Locals: actor, optional size (:lg for leads/leadership) %>
+<% size = local_assigns.fetch(:size, :sm) %>
+<% large = size == :lg %>
+<div data-org-node="<%= actor.key %>" data-org-parent="<%= actor.parent_key %>"
+     class="org-actor group <%= large ? "min-w-[15rem]" : "min-w-[13rem]" %>">
+  <div class="flex items-center gap-3 rounded-2xl border border-ink-200/70 bg-white px-3 <%= large ? "py-3" : "py-2.5" %> shadow-soft transition group-hover:border-accent-300">
+    <%= initials_avatar(actor.name, size: large ? "h-11 w-11" : "h-9 w-9") %>
+
+    <div class="min-w-0 flex-1">
+      <p class="truncate <%= large ? "text-sm" : "text-[13px]" %> font-semibold text-ink-950">
+        <% if actor.developer %>
+          <%= link_to actor.name, actor.developer, class: "hover:text-accent-700" %>
+        <% else %>
+          <%= actor.name %>
+        <% end %>
+      </p>
+      <div class="mt-0.5 flex flex-wrap items-center gap-1.5">
+        <%= status_badge(actor.role) %>
+        <% if actor.subtitle.present? %>
+          <span class="truncate text-[11px] text-ink-400"><%= actor.subtitle %></span>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="shrink-0 text-right">
+      <% if actor.report_count.to_i.positive? %>
+        <p class="font-display text-base font-semibold text-ink-950"><%= actor.report_count %></p>
+        <p class="text-[10px] uppercase tracking-wide text-ink-400">reports</p>
+      <% elsif actor.project_count.to_i.positive? %>
+        <p class="font-display text-base font-semibold text-ink-950"><%= actor.project_count %></p>
+        <p class="text-[10px] uppercase tracking-wide text-ink-400">projects</p>
+      <% end %>
+    </div>
+  </div>
+</div>

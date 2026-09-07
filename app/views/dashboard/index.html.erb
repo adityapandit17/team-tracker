@@ -1,0 +1,116 @@
+<% content_for :page_title, "Dashboard" %>
+<% content_for :page_description, @scoped_view ? "Your assigned developers, projects, and leads" : "Live overview across developers, projects and leads" %>
+
+<section class="relative overflow-hidden rounded-3xl border border-ink-200/70 bg-ink-950 px-6 py-8 text-sand-50 shadow-soft sm:px-8">
+  <div class="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-accent-500/25 blur-3xl"></div>
+  <div class="pointer-events-none absolute bottom-0 left-1/3 h-40 w-72 rounded-full bg-sand-200/20 blur-3xl"></div>
+  <div class="relative max-w-2xl">
+    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-accent-300"><%= @scoped_view ? "My workspace" : "Team capacity" %></p>
+    <h2 class="mt-2 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+      <% if @scoped_view %>
+        Hello <%= current_user.display_name.split.first %>—here’s what’s assigned to you.
+      <% else %>
+        Know who’s free, who’s shipping, and what’s next.
+      <% end %>
+    </h2>
+    <p class="mt-3 max-w-xl text-sm leading-relaxed text-ink-200">
+      <% if @scoped_view %>
+        Team leads and developers only see their own profile, projects, and client leads.
+      <% else %>
+        A single ops surface for staffing, skills, and client pipeline — modeled on your spreadsheet, rebuilt for daily use.
+      <% end %>
+    </p>
+  </div>
+</section>
+
+<div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+  <% [
+    ["Developers", @developer_count],
+    ["Active Projects", @active_projects],
+    ["Ready for New", @ready_count],
+    ["Avg Rating", (@avg_rating ? "#{@avg_rating}" : "—")],
+    ["Open Leads", @open_leads],
+  ].each do |label, value| %>
+    <div class="card p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+      <p class="text-xs font-semibold uppercase tracking-wide text-ink-500"><%= label %></p>
+      <p class="stat-value"><%= value %><% if label == "Avg Rating" && @avg_rating %><span class="ml-1 font-sans text-sm font-medium text-ink-400">/ 5</span><% end %></p>
+    </div>
+  <% end %>
+</div>
+
+<div class="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+  <div class="card p-5 lg:col-span-2">
+    <div class="flex items-center justify-between gap-3">
+      <h2 class="font-display text-lg font-semibold text-ink-950">Top rated developers</h2>
+      <%= link_to "View all", developers_path, class: "text-xs font-semibold text-accent-700 hover:text-accent-900" %>
+    </div>
+    <div class="mt-4 overflow-hidden rounded-xl border border-ink-100">
+      <table class="w-full">
+        <thead class="bg-ink-50/80">
+          <tr>
+            <th class="table-head">Name</th>
+            <th class="table-head">Stack</th>
+            <th class="table-head">Rating</th>
+            <th class="table-head">Ready?</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-ink-100 bg-white/60">
+          <% @top_rated.each do |dev| %>
+            <tr class="transition hover:bg-accent-50/40">
+              <td class="table-cell font-medium text-ink-950">
+                <div class="flex items-center gap-2">
+                  <%= initials_avatar(dev.name, size: "h-7 w-7") %>
+                  <%= link_to dev.name, dev, class: "hover:text-accent-700" %>
+                </div>
+              </td>
+              <td class="table-cell"><%= status_badge(dev.stack) %></td>
+              <td class="table-cell"><%= rating_stars(dev.rating) %></td>
+              <td class="table-cell">
+                <% if dev.ready_for_new_project? %>
+                  <span class="badge bg-accent-100 text-accent-800 ring-1 ring-accent-200">Ready</span>
+                <% else %>
+                  <span class="text-ink-400">—</span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="space-y-4">
+    <div class="card p-5">
+      <h2 class="font-display text-lg font-semibold text-ink-950">Currently on calls</h2>
+      <ul class="mt-4 space-y-3">
+        <% @on_call_now.each do |dev| %>
+          <li class="flex items-center justify-between gap-3 text-sm">
+            <span class="flex min-w-0 items-center gap-2">
+              <%= initials_avatar(dev.name, size: "h-7 w-7") %>
+              <span class="truncate font-medium text-ink-900"><%= dev.name %></span>
+            </span>
+            <span class="shrink-0 rounded-md bg-ink-100 px-2 py-0.5 text-xs font-semibold text-ink-700"><%= dev.on_call_count %> call<%= "s" if dev.on_call_count != 1 %></span>
+          </li>
+        <% end %>
+        <% if @on_call_now.empty? %>
+          <li class="text-sm text-ink-400">No one is on active calls right now.</li>
+        <% end %>
+      </ul>
+    </div>
+
+    <div class="card p-5">
+      <h2 class="font-display text-lg font-semibold text-ink-950">Project status</h2>
+      <ul class="mt-4 space-y-2.5">
+        <% @project_status_breakdown.each do |status, count| %>
+          <li class="flex items-center justify-between text-sm">
+            <%= status_badge(status) %>
+            <span class="font-semibold text-ink-800"><%= count %></span>
+          </li>
+        <% end %>
+        <% if @project_status_breakdown.blank? %>
+          <li class="text-sm text-ink-400">No projects yet.</li>
+        <% end %>
+      </ul>
+    </div>
+  </div>
+</div>

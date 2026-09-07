@@ -1,0 +1,38 @@
+<%
+  items = [
+    { path: root_path, label: "Dashboard", active: current_page?(root_path), icon: "grid" },
+    { path: developers_path, label: "Developers", active: controller_name == "developers", icon: "people" },
+    { path: hierarchy_path, label: "Hierarchy", active: controller_name == "hierarchy", icon: "hierarchy" },
+    { path: projects_path, label: "Projects", active: controller_name == "projects", icon: "folder" },
+    { path: skills_path, label: "Skill Matrix", active: controller_name == "skills", icon: "matrix" },
+    { path: feedbacks_path, label: "Feedback", active: controller_name == "feedbacks", icon: "feedback" },
+    { path: assessments_path, label: "Assessments", active: controller_name == "assessments", icon: "assessment" },
+    { path: one_on_ones_path, label: "1:1s", active: controller_name.in?(%w[one_on_ones growth_plans]), icon: "oneonone" },
+    { path: action_items_path, label: "My Todos", active: controller_name == "action_items", icon: "todos" },
+    { path: client_leads_path, label: "Client Leads", active: controller_name == "client_leads", icon: "leads" },
+  ]
+  if can?(:manage_allocations)
+    items << { path: bench_path, label: "Bench", active: controller_name == "allocations", icon: "bench" }
+  end
+  if can?(:view_utilization)
+    items << { path: utilization_index_path, label: "Utilization", active: controller_name == "utilization", icon: "util" }
+  end
+  if can?(:view_incentives)
+    items << { path: incentives_path, label: "Incentives", active: controller_name == "incentives", icon: "billing" }
+  end
+  if can?(:view_billings)
+    items << { path: billings_path, label: "Billings", active: controller_name.in?(%w[billings project_billings]), icon: "billing" }
+  end
+  if can?(:manage_users)
+    items << { path: accounts_path, label: "Accounts", active: controller_name == "users", icon: "accounts" }
+  end
+  if can?(:view_audits)
+    items << { path: audits_path, label: "Audit Log", active: controller_name == "audits", icon: "audit" }
+  end
+%>
+<% items.each do |item| %>
+  <%= link_to item[:path], class: item[:active] ? "nav-link-active" : "nav-link" do %>
+    <%= nav_icon(item[:icon]) %>
+    <span><%= item[:label] %></span>
+  <% end %>
+<% end %>

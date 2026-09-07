@@ -1,0 +1,24 @@
+<%
+  options = local_assigns[:options] || []
+  blank_label = local_assigns[:blank_label]
+  placeholder = local_assigns[:placeholder]
+%>
+<%= form_with url: update_cell_project_path(project), method: :patch,
+              data: { controller: "inline-edit", action: "change->inline-edit#submit" } do %>
+  <%= hidden_field_tag :field, field, id: nil %>
+  <% case type %>
+  <% when :text %>
+    <%= text_field_tag :value, value, id: nil, class: "cell-input", placeholder: placeholder,
+                       autocomplete: "off", data: { inline_edit_target: "input", action: "keydown.enter->inline-edit#commit" } %>
+  <% when :date %>
+    <%= date_field_tag :value, value, id: nil, class: "cell-input", data: { inline_edit_target: "input" } %>
+  <% when :select %>
+    <%= select_tag :value, options_for_select(options, value), id: nil, class: "cell-input",
+                   include_blank: blank_label, data: { inline_edit_target: "input" } %>
+  <% when :boolean %>
+    <%= hidden_field_tag :value, "0", id: nil %>
+    <%= check_box_tag :value, "1", value, id: nil,
+                      class: "h-4 w-4 rounded border-ink-300 text-accent-600 focus:ring-accent-500",
+                      data: { inline_edit_target: "input" } %>
+  <% end %>
+<% end %>

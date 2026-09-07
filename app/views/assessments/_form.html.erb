@@ -1,0 +1,78 @@
+<%= form_with model: assessment, url: (assessment.persisted? ? assessment_path(assessment) : (@developer ? developer_assessments_path(@developer) : assessments_path)), class: "space-y-6" do |f| %>
+  <% if assessment.errors.any? %>
+    <div class="rounded-md bg-red-50 p-3 text-sm text-red-700">
+      <ul class="list-disc pl-4">
+        <% assessment.errors.full_messages.each do |msg| %><li><%= msg %></li><% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <% if @developer %>
+      <%= f.hidden_field :developer_id, value: @developer.id %>
+      <div class="sm:col-span-2">
+        <p class="label">Developer</p>
+        <p class="text-sm font-medium text-ink-900"><%= @developer.name %></p>
+      </div>
+    <% else %>
+      <div>
+        <%= f.label :developer_id, "Developer", class: "label" %>
+        <%= f.collection_select :developer_id, scoped_developers.order(:name), :id, :name, { include_blank: "Select…" }, class: "input", required: true %>
+      </div>
+    <% end %>
+    <div>
+      <%= f.label :career_level, "Career level", class: "label" %>
+      <%= f.select :career_level, Assessment.career_levels.keys.map { |l| [l.humanize, l] }, {}, class: "input" %>
+    </div>
+    <div>
+      <%= f.label :assessed_on, "Assessed on", class: "label" %>
+      <%= f.date_field :assessed_on, class: "input" %>
+    </div>
+    <div class="sm:col-span-2">
+      <%= f.label :title, class: "label" %>
+      <%= f.text_field :title, class: "input" %>
+    </div>
+  </div>
+
+  <div>
+    <%= f.label :summary, class: "label" %>
+    <%= f.text_area :summary, rows: 3, class: "input", placeholder: "Overall summary for this level…" %>
+  </div>
+
+  <div>
+    <div class="mb-3 flex items-end justify-between gap-3">
+      <div>
+        <h3 class="font-display text-lg font-semibold text-ink-950">Criteria ratings</h3>
+        <p class="text-xs text-ink-500">Score each criterion 1–5 for this career level</p>
+      </div>
+    </div>
+
+    <div class="space-y-3">
+      <%= f.fields_for :assessment_criteria do |cf| %>
+        <div class="rounded-xl border border-ink-100 bg-white/70 p-4">
+          <%= cf.hidden_field :id %>
+          <%= cf.hidden_field :position %>
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-12">
+            <div class="sm:col-span-4">
+              <%= cf.label :name, "Criterion", class: "label" %>
+              <%= cf.text_field :name, class: "input" %>
+            </div>
+            <div class="sm:col-span-2">
+              <%= cf.label :rating, class: "label" %>
+              <%= cf.select :rating, (1..5).map { |n| [n, n] }, {}, class: "input" %>
+            </div>
+            <div class="sm:col-span-6">
+              <%= cf.label :notes, class: "label" %>
+              <%= cf.text_field :notes, class: "input", placeholder: "Optional notes" %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="flex justify-end gap-2">
+    <%= link_to "Cancel", (@developer ? developer_path(@developer) : assessments_path), class: "btn-secondary" %>
+    <%= f.submit class: "btn-primary" %>
+  </div>
+<% end %>

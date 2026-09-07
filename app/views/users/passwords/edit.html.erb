@@ -1,0 +1,27 @@
+<h2 class="font-display text-xl font-semibold text-ink-950">Choose a new password</h2>
+
+<%= form_for(resource, as: resource_name, url: password_path(resource_name), html: { method: :put, class: "mt-6 space-y-4" }) do |f| %>
+  <%= render "users/shared/error_messages", resource: resource %>
+  <%= f.hidden_field :reset_password_token %>
+
+  <div>
+    <%= f.label :password, "New password", class: "label" %>
+    <% if @minimum_password_length %>
+      <em class="mb-1.5 block text-xs text-ink-400">(<%= @minimum_password_length %> characters minimum)</em>
+    <% end %>
+    <%= f.password_field :password, autofocus: true, autocomplete: "new-password", class: "input" %>
+  </div>
+
+  <div>
+    <%= f.label :password_confirmation, "Confirm new password", class: "label" %>
+    <%= f.password_field :password_confirmation, autocomplete: "new-password", class: "input" %>
+  </div>
+
+  <div class="pt-2">
+    <%= f.submit "Change password", class: "btn-primary w-full" %>
+  </div>
+<% end %>
+
+<div class="mt-5 border-t border-ink-100 pt-4 text-sm text-ink-500">
+  <%= render "users/shared/links" %>
+</div>

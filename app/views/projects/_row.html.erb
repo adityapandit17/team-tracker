@@ -1,0 +1,111 @@
+<%
+  full_edit = can?(:manage_all_records)
+  status_edit = full_edit || (can?(:edit_own_projects) && owns_record?(project))
+  pending = project.project_billings.count { |b| b.draft? || b.pending? }
+  developer_options = developer_cell_options
+  short_developer_options = developer_cell_options(short: true)
+%>
+<tr id="<%= dom_id(project) %>" class="align-middle transition hover:bg-accent-50/40">
+  <td class="table-cell font-medium text-ink-950" data-column="name">
+    <% if full_edit %>
+      <div class="flex items-center gap-1.5">
+        <%= render "projects/editable_cell", project: project, field: "name", type: :text, value: project.name, placeholder: "Project name" %>
+        <%= link_to "↗", project, class: "shrink-0 text-ink-400 hover:text-accent-700", title: "Open #{project.name}" %>
+      </div>
+    <% else %>
+      <%= link_to project.name, project, class: "hover:text-accent-700" %>
+    <% end %>
+  </td>
+
+  <td class="table-cell text-ink-500" data-column="technology">
+    <% if full_edit %>
+      <%= render "projects/editable_cell", project: project, field: "technology", type: :text, value: project.technology, placeholder: "—" %>
+    <% else %>
+      <%= project.technology.presence || "—" %>
+    <% end %>
+  </td>
+
+  <td class="table-cell text-ink-500" data-column="start">
+    <% if full_edit %>
+      <%= render "projects/editable_cell", project: project, field: "start_date", type: :date, value: project.start_date %>
+    <% else %>
+      <%= project.start_date&.strftime("%b %Y") || "—" %>
+    <% end %>
+  </td>
+
+  <td class="table-cell" data-column="billing">
+    <% if full_edit %>
+      <%= render "projects/editable_cell", project: project, field: "billing_type", type: :select,
+                 value: project.billing_type, options: Project.billing_types.keys.map { |t| [t.humanize, t] } %>
+    <% else %>
+      <%= status_badge(project.billing_type) %>
+    <% end %>
+  </td>
+
+  <td class="table-cell" data-column="status">
+    <% if status_edit %>
+      <%= render "projects/editable_cell", project: project, field: "status", type: :select,
+                 value: project.status, options: Project.statuses.keys.map { |s| [s.humanize, s] } %>
+    <% else %>
+      <%= status_badge(project.status) %>
+    <% end %>
+  </td>
+
+  <td class="table-cell" data-column="call" title="<%= project.call_developer&.name %>">
+    <% if full_edit %>
+      <%= render "projects/editable_cell", project: project, field: "call_developer_id", type: :select,
+                 value: project.call_developer_id, options: short_developer_options, blank_label: "—" %>
+    <% else %>
+      <%= short_name(project.call_developer&.name).presence || "—" %>
+    <% end %>
+  </td>
+
+  <td class="table-cell" data-column="lead">
+    <% if full_edit %>
+      <%= render "projects/editable_cell", project: project, field: "lead_developer_id", type: :select,
+                 value: project.lead_developer_id, options: developer_options, blank_label: "—" %>
+    <% else %>
+      <%= project.lead_developer&.name || "—" %>
+    <% end %>
+  </td>
+
+  <td class="table-cell" data-column="main">
+    <% if full_edit %>
+      <%= render "projects/editable_cell", project: project, field: "main_developer_id", type: :select,
+                 value: project.main_developer_id, options: developer_options, blank_label: "—" %>
+    <% else %>
+      <%= project.main_developer&.name || "—" %>
+    <% end %>
+  </td>
+
+  <% if can?(:view_incentives) %>
+    <td class="table-cell" data-column="incentive">
+      <% if can?(:manage_incentives) %>
+        <%= render "projects/editable_cell", project: project, field: "incentive_eligible", type: :boolean, value: project.incentive_eligible? %>
+      <% else %>
+        <%= project.incentive_eligible? ? "Yes" : "No" %>
+      <% end %>
+    </td>
+  <% end %>
+
+  <td class="table-cell" data-column="pending">
+    <% if can?(:view_billings) %>
+      <% if pending.positive? %>
+        <span class="badge bg-amber-50 text-amber-800 ring-1 ring-amber-200"><%= pending %></span>
+      <% else %>
+        <span class="text-ink-400">0</span>
+      <% end %>
+    <% else %>
+      —
+    <% end %>
+  </td>
+
+  <td class="table-cell text-right space-x-2 whitespace-nowrap" data-column="actions">
+    <% if can?(:view_billings) %>
+      <%= link_to "Billings", project_project_billings_path(project), class: "text-xs font-semibold text-ink-500 hover:text-ink-800" %>
+    <% end %>
+    <% if full_edit || (can?(:edit_own_projects) && owns_record?(project)) %>
+      <%= link_to "Edit", edit_project_path(project), class: "text-xs font-semibold text-accent-700 hover:text-accent-900" %>
+    <% end %>
+  </td>
+</tr>

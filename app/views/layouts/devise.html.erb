@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+  <head>
+    <title>Sign in · Team Tracker</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#151b18">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+  <body class="h-full">
+    <div class="relative flex min-h-screen items-center justify-center px-4 py-12">
+      <div class="pointer-events-none absolute inset-0 overflow-hidden">
+        <div class="absolute -left-24 top-10 h-72 w-72 rounded-full bg-accent-400/20 blur-3xl"></div>
+        <div class="absolute -right-16 bottom-0 h-80 w-80 rounded-full bg-ink-900/10 blur-3xl"></div>
+      </div>
+
+      <div class="relative w-full max-w-md">
+        <div class="mb-8 text-center">
+          <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-ink-950 font-display text-lg font-bold text-sand-50 shadow-soft">T</div>
+          <h1 class="mt-4 font-display text-3xl font-semibold tracking-tight text-ink-950">Team Tracker</h1>
+          <p class="mt-1 text-sm text-ink-500">Sign in to your ops workspace</p>
+        </div>
+
+        <% if notice %>
+          <div class="mb-4 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900"><%= notice %></div>
+        <% end %>
+        <% if alert %>
+          <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"><%= alert %></div>
+        <% end %>
+
+        <div class="card p-6 sm:p-8">
+          <%= yield %>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
